@@ -269,7 +269,8 @@ let PROJETOS = ["Implantação de Novas Unidades","Energia Fotovoltaica","Reform
 let RESPONSAVEIS = ["Rafael","Gabriela","Michele","Rogério","Gilson","Leonardo"];
 const NAO_CLASS = "Não classificado"; // bucket p/ contas fora da lista (não some no consolidado)
 const MAX_MESES = 600;  // teto de prazo (evita travar a aba com Array gigante)
-const DIV_TOL = 0.02;   // tolerância de divergência (R$) — aceita erros de arredondamento de centavo
+const DIV_TOL = 0.02;   // tolerância de divergência exata (R$)
+const AJUSTE_RESIDUAL_TOL = 50.00; // até este valor, o app ajusta automaticamente no último mês editável ao salvar
 const SCHEMA_VERSION = 2; // versão do formato salvo/exportado — v2 removeu aditivos
 const UF_CONSELHO = {'AC':'CRN I','AM':'CRN I','RO':'CRN I','RR':'CRN I','AP':'CRN II','PA':'CRN II','CE':'CRNE I','PI':'CRNE I','MA':'CRNE I','PB':'CRNE II','RN':'CRNE II','AL':'CRNE III','PE':'CRPE','BA':'CRBA','DF':'CRCO','GO':'CRCO','TO':'CRCO','MS':'CRMS','MT':'CRMT','MG':'CRMG','ES':'CRES','RJ':'CRRJ','SP':'CRSP','PR':'CRPR','SC':'CRSC','RS':'CRRS'};
 const ANOS = Array.from({length:10},(_,i)=>new Date().getFullYear()-3+i);
@@ -530,6 +531,47 @@ function calcDivOk(cid){
   }
   const d=calcDivergencia(cid);
   return d===null||Math.abs(d)<=DIV_TOL;
+}
+
+// Permite salvar quando a diferença é apenas residual de arredondamento.
+// O ajuste exato é feito em ajustarResiduoCentavos() antes de persistir.
+function calcPodeSalvar(cid){
+  const c=contratos.find(x=>x.id===cid);
+  if(!c) return false;
+  if(hasRateio(c)){
+    const dS=calcDivergenciaEnt(cid,'sest'), dN=calcDivergenciaEnt(cid,'senat');
+    return (dS===null||Math.abs(dS)<=AJUSTE_RESIDUAL_TOL) && (dN===null||Math.abs(dN)<=AJUSTE_RESIDUAL_TOL);
+  }
+  const d=calcDivergencia(cid);
+  return d===null||Math.abs(d)<=AJUSTE_RESIDUAL_TOL;
+}
+function ajustarResiduoEnt(cid, ent){
+  const c=contratos.find(x=>x.id===cid);
+  if(!c) return false;
+  const div = hasRateio(c) ? calcDivergenciaEnt(cid,ent) : calcDivergencia(cid);
+  if(div===null || Math.abs(div)<=DIV_TOL) return true;
+  if(Math.abs(div)>AJUSTE_RESIDUAL_TOL) return false;
+  const idxs=getIdxs(c).filter(a=>a!==ABS_NOW);
+  const dObj = ent==='senat' ? (draftsSenat[cid]=draftsSenat[cid]||{}) : (drafts[cid]=drafts[cid]||{});
+  const candidatos = [
+    ...idxs.filter(a=>a>ABS_NOW && (dObj[a]||0)>0).sort((a,b)=>b-a),
+    ...idxs.filter(a=>a>ABS_NOW).sort((a,b)=>b-a),
+    ...idxs.sort((a,b)=>b-a)
+  ];
+  const alvo = [...new Set(candidatos)].find(a => ((dObj[a]||0) - div) >= 0);
+  if(alvo==null) return false;
+  dObj[alvo]=parseFloat(((dObj[alvo]||0)-div).toFixed(2));
+  if(hasAutoPrev(c) && alvo>ABS_NOW){
+    if(ent==='senat') { manualsSenat[cid]=manualsSenat[cid]||{}; manualsSenat[cid][alvo]=true; }
+    else { manuals[cid]=manuals[cid]||{}; manuals[cid][alvo]=true; }
+  }
+  return true;
+}
+function ajustarResiduoCentavos(cid){
+  const c=contratos.find(x=>x.id===cid);
+  if(!c) return false;
+  if(hasRateio(c)) return ajustarResiduoEnt(cid,'sest') && ajustarResiduoEnt(cid,'senat');
+  return ajustarResiduoEnt(cid,'sest');
 }
 
 // Valor do contrato no mês absoluto `ai`, respeitando o filtro de entidade.
@@ -819,7 +861,7 @@ function renderContratos(){
           ${hasRateio(c)
             ?`<span style="font-size:10px;font-weight:600;${divOkAll?'color:var(--acc)':'color:var(--dan)'}">${divOkAll?ico('check',11)+' SEST e SENAT balanceados':ico('alert',11)+' Verifique as divergências acima'}</span>`
             :''}
-          <button class="btn btn-p" ${!divOkAll?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="salvarFluxo(${c.id})">${ico('save',12)} Salvar</button>
+          <button class="btn btn-p" ${!calcPodeSalvar(c.id)?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="salvarFluxo(${c.id})">${ico('save',12)} Salvar</button>
           <button class="btn btn-d" onclick="limparFuturos(${c.id})">${ico('trash',12)} Limpar futuros</button>
           <button class="btn btn-d" style="margin-left:auto" onclick="excluirContrato(${c.id})">${ico('xcircle',12)} Excluir contrato</button>
         </div>
@@ -951,7 +993,7 @@ function buildObraPanel(c){
       ${hasRateio(c)
         ?`<span style="font-size:10px;font-weight:600;${divOkAll?'color:var(--acc)':'color:var(--dan)'}">${divOkAll?ico('check',11)+' SEST e SENAT balanceados':ico('alert',11)+' Verifique as divergências acima'}</span>`
         :''}
-      <button class="btn btn-p" ${!divOkAll?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="salvarFluxo(${c.id})">${ico('save',12)} Salvar</button>
+      <button class="btn btn-p" ${!calcPodeSalvar(c.id)?'disabled style="opacity:.4;cursor:not-allowed"':''} onclick="salvarFluxo(${c.id})">${ico('save',12)} Salvar</button>
       <button class="btn btn-d" style="margin-left:auto" onclick="excluirContrato(${c.id})">${ico('xcircle',12)} Excluir contrato</button>
     </div>
   </div>`;
@@ -991,9 +1033,10 @@ function podarFluxo(cid){
 
 function salvarFluxo(cid){
   const c=contratos.find(x=>x.id===cid);
-  // Guard defensivo: o botão UI fica disabled quando há divergência, mas se o
+  ajustarResiduoCentavos(cid);
+  // Guard defensivo: o botão UI fica disabled quando a divergência é material, mas se o
   // estado UI ficar fora de sync (re-render race) o clique ainda pode passar.
-  if(!calcDivOk(cid)){ toast('Não é possível salvar com divergência. Ajuste os valores.'); return; }
+  if(!calcDivOk(cid)){ toast('Não é possível salvar com divergência material. Ajuste os valores.'); return; }
   const idxs=getIdxs(c);
   fluxo[cid]=fluxo[cid]||{};
   idxs.filter(a=>a!==ABS_NOW).forEach(a=>{ fluxo[cid][a]=drafts[cid][a]||0; });
