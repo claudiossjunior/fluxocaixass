@@ -173,6 +173,9 @@ canvas{max-width:100%}
 .pct-inp{background:var(--sur2);border:1px solid var(--bor);color:var(--txt);border-radius:7px;padding:6px 8px;font-size:15px;width:65px;font-family:'DM Sans',sans-serif;outline:none}
 .pct-inp:focus{border-color:var(--sest)}
 .pct-preview{font-size:14px;color:var(--mut);margin-top:4px}
+/* FILTROS LISTA CONTRATOS */
+.clist-filtros{padding:7px 10px;border-bottom:1px solid var(--bor);display:flex;flex-direction:column;gap:6px}
+.clist-filtros .fsel{width:100%}
 /* RESPONSIVO */
 @media (max-width:820px){
 body{flex-direction:column}
@@ -224,13 +227,11 @@ body{flex-direction:column}
 <script>
 // ── DADOS ────────────────────────────────────────────────────────────────────
 const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-
 // ── TRAVA DAS ABAS Dashboard/Configurações ────────────────────────────────────
 // Barreira de conveniência (o código-fonte é visível — não é segurança real).
 // Troque a senha aqui:
-const SENHA_PAINEL = '1234';
+const SENHA_PAINEL = 'SestSenat';
 let painelLiberado = false; // destrava na sessão após a senha correta (até recarregar)
-
 // ── ÍCONES SVG ────────────────────────────────────────────────────────────────
 function ico(name,s=13){
   const a=`width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"`;
@@ -256,10 +257,10 @@ function ico(name,s=13){
     dot:`<svg width="${s}" height="${s}" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>`,
     inbox:`<svg ${a}><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>`,
     layers:`<svg ${a}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`,
+    map:`<svg ${a}><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`,
   };
   return `<span class="ico">${p[name]||''}</span>`;
 }
-
 let CONTAS = ["Imobilizado em Andamento","Manutenção e Conservação de Bens Imóveis","Serviços Técnicos Profissionais","Diárias no País","Passagens para o País","Materiais Manutenção de Bens Imóveis e Equipamentos","Taxas Diversas","Serviços de Limpeza e Conservação","Serviços de Informática","Serviço de Energia Elétrica","Água e Esgoto","Locomoção Urbana","Treinamento / Capacitação"];
 const CORES = {"Imobilizado em Andamento":"#4ade80","Manutenção e Conservação de Bens Imóveis":"#22d3ee","Serviços Técnicos Profissionais":"#f59e0b","Diárias no País":"#818cf8","Passagens para o País":"#fb923c","Materiais Manutenção de Bens Imóveis e Equipamentos":"#e879f9","Taxas Diversas":"#facc15","Serviços de Limpeza e Conservação":"#34d399","Serviços de Informática":"#60a5fa","Serviço de Energia Elétrica":"#f87171","Água e Esgoto":"#a78bfa","Locomoção Urbana":"#94a3b8","Treinamento / Capacitação":"#fbbf24"};
 let LOCALIDADES = ["A definir (Copa 2026)","Alagoinhas/BA (N)","Anápolis/GO (S)","Aracaju/SE (S)","Araraquara/SP (B 30)","Araxá/MG (B 96)","Araçatuba/SP (B 39)","Assis/SP (C 106)","Balsas/MA (N)","Barra Mansa/RJ (B 53)","Barueri/SP (DN)","Barueri/SP (N)","Bauru/SP (B 59)","Belo Horizonte (Pampulha)/MG (N)","Belo Horizonte - Jardim Vitória/MG (B 75)","Belo Horizonte - Serra Verde/MG (A 14)","Bento Gonçalves/RS (B 20)","Betim/MG (DN 149)","Blumenau/SC (B 95)","Boa Vista/RR (B 52)","Brasília/DF (A 04)","Cabo de Santo Agostinho/PE (B 83)","Cabo de Santo Agostinho/PE - MSA","Cachoeira do Sul/RS (N)","Cachoeiro do Itapemirim/ES (B 56)","Campina Grande/PB (B 55)","Campinas/SP (A 36)","Campo Grande/MS (B 32)","Campo Mourão/PR (N)","Campos dos Goytacazes/RJ (B 25)","Caratinga/MG (DN)","Caratinga/MG (S)","Carazinho/RS (C 115)","Cariacica/ES (A 12)","Caruaru/PE (B 85)","Catanduvas/SC (S)","Caxias do Sul/RS (B 58)","Concórdia/SC (C 114)","Conselheiro Lafaiete/MG (N)","Contagem/MG (A 21)","Corumbá/MS (N)","Crato/CE (B 91)","Criciúma/SC (B 65)","Cruzeiro do Sul/AC (DN 136)","Cuiabá/MT (A 03)","Curvelo/MG (DN 161)","Cáceres/MT (N)","Departamento Executivo","Divinópolis/MG (B 31)","Dourados/MS (S)","Duque de Caxias/RJ (C 104)","Feira de Santana/BA (B 45)","Florianópolis/SC (B 26)","Formiga/MG (DN 147)","Fortaleza (Caucaia)/CE (C)","Fortaleza (Caucaia)/CE (N)","Fortaleza/CE (A 23)","Franca/SP (N)","Garanhuns/PE (N)","Goiana/PE (N)","Governador Valadares/MG (B 44)","Guarapuava/PR (S)","Guarujá/SP (C 101)","Guarulhos/SP (B 90)","Guaxupé/MG (N)","Gurupi/TO (N)","Ijuí/RS (S)","Imperatriz/MA (B 97)","Itabuna/BA (B 94)","Itaituba/PA (N)","Itajaí/SC (C 152)","Itaperuna/RJ (N)","Ituiutaba/MG (DN 146)","Itumbiara/GO (C 120)","Jacareí/SP (B 64)","Ji-Paraná/RO (DN)","Ji-Paraná/RO (N)","Joinville/SC (C 98)","João Monlevade/MG (DN 156)","Juazeiro/BA (N)","Juiz de Fora/MG (B 48)","Jundiaí/SP (N)","Lages/SC (C 113)","Lajeado/RS (S)","Lavras/MG (B 92)","Limeira/SP (C 105)","Linhares/ES (N)","Luziânia/GO (B 93)","Macapá/AP (B 66)","Macaé/RJ (N)","Manaus/AM (A 16)","Manaus/AM (DN 135)","Marabá/PA (B 77)","Marília/SP (B 78)","Mogi das Cruzes/SP (DN)","Mogi das Cruzes/SP (N)","Montes Claros/MG (B 33)","Muriaé/MG (DN)","Muriaé/MG (N)","Natal/RN (B 29)","Nova Friburgo/RJ (DN)","Novo Hamburgo/RS (N)","Palmas/TO (B 63)","Paracatu/MG (N)","Paragominas/PA (C 110)","Parauapebas/PA","Passo Fundo/RS (B 84)","Patos de Minas/MG (B 68)","Paulínia/SP (S)","Pelotas/RS (B 50)","Petrolina/PE","Petrolina/PE (B 62)","Picos/PI (C 108)","Piracicaba/SP (B 40)","Pirapora/MG (DN)","Pirapora/MG (S)","Ponta Grossa/PR (B 69)","Porto Alegre/RS (N)","Porto Alegre/RS (S)","Porto Ferreira/SP (C 107)","Porto Velho/RO","Porto Velho/RO (CN)","Porto Velho/RO (N)","Pouso Alegre/MG (B 34)","Poços de Caldas/MG (B 61)","Praia Grande/SP (DN 131)","Presidente Prudente/SP (B 41)","Recife/PE","Recife/PE (S)","Resende/RJ (DN)","Resende/RJ (S)","Ribeirão Preto/SP (B 35)","Rio Branco/AC (B 38)","Rio Branco/AC (Copa 2025)","Rio Claro/SP (B 80)","Rio Verde/GO (B 81)","Rio de Janeiro (Caju)/RJ (N)","Rio de Janeiro - Deodoro/RJ (A 07)","Rio de Janeiro - Paciência/RJ (B 89)","Rondonópolis/MT (B 70)","Santa Cruz do Sul/RS (N)","Santa Rosa/RS (B 87)","Santana do Paraíso - Vale do Aço/MG (B 72)","Santarém/PA (B 76)","Santo André/SP (A 42)","Senador Canedo/GO (N)","Serra Talhada/PE (C 118)","Serra Verde/MG - Atendimento PBH","Serra Verde/MG - EIV, RIC e PGRSE","Serra Verde/MG - regularização","Sete Lagoas/MG (DN 163)","Simões Filho/BA (A 24)","Sinop/MT (N)","Sobral/CE (C 116)","Sorocaba/SP (B 43)","São Carlos/SP (N)","São Gonçalo/RJ (B 54)","São José do Rio Preto/SP (B 46)","São José dos Campos/SP (N)","São João do Meriti/RJ (CN)","São Luís/MA (B 09)","São Paulo - Parque Novo Mundo/SP (A 02)","São Paulo - Vila Jaguara/SP (A 01)","São Pedro da Aldeia/RJ (DN)","São Pedro da Aldeia/RJ (N)","Tangará da Serra/MT (N)","Taubaté/SP (B 82)","Teotônio Vilela/AL (C 117)","Teresina/PI (B 22)","Teresina/PI (N)","Teófilo Otoni/MG (B 74)","Três Barras/SC (S)","Três Lagoas/MS (B 88)","Três Pontas/MG (B 100)","Três Rios/RJ (DN)","Três Rios/RJ (S)","Tubarão/SC (N)","Uberaba/MG (B 57)","Uberlândia/MG (B 47)","Uruguaiana/RS (B 71)","Varginha/MG (B 60)","Vila Jaguara/SP (S)","Vilhena/RO (DN 139)"];
@@ -272,9 +273,8 @@ const MAX_MESES = 600;  // teto de prazo (evita travar a aba com Array gigante)
 const DIV_TOL = 0.02;   // tolerância de divergência exata (R$)
 const AJUSTE_RESIDUAL_TOL = 50.00; // até este valor, o app ajusta automaticamente no último mês editável ao salvar
 const SCHEMA_VERSION = 2; // versão do formato salvo/exportado — v2 removeu aditivos
-const UF_CONSELHO = {'AC':'CRN I','AM':'CRN I','RO':'CRN I','RR':'CRN I','AP':'CRN II','PA':'CRN II','CE':'CRNE I','PI':'CRNE I','MA':'CRNE I','PB':'CRNE II','RN':'CRNE II','AL':'CRNE III','PE':'CRPE','BA':'CRBA','DF':'CRCO','GO':'CRCO','TO':'CRCO','MS':'CRMS','MT':'CRMT','MG':'CRMG','ES':'CRES','RJ':'CRRJ','SP':'CRSP','PR':'CRPR','SC':'CRSC','RS':'CRRS'};
+const UF_CONSELHO = {'AC':'CRN I','AM':'CRN I','RO':'CRN I','RR':'CRN I','AP':'CRN II','PA':'CRN II','CE':'CRNE I','PI':'CRNE I','MA':'CRNE I','PB':'CRNE II','RN':'CRNE II','AL':'CRNE III','SE':'CRNE III','PE':'CRPE','BA':'CRBA','DF':'CRCO','GO':'CRCO','TO':'CRCO','MS':'CRMS','MT':'CRMT','MG':'CRMG','ES':'CRES','RJ':'CRRJ','SP':'CRSP','PR':'CRPR','SC':'CRSC','RS':'CRRS'};
 const ANOS = Array.from({length:10},(_,i)=>new Date().getFullYear()-3+i);
-
 // ANO_REF é o ano de referência para o índice absoluto (mesAbsInicio e chaves do fluxo).
 // FIXO (não lê o relógio): assim as datas gravadas mantêm a mesma semântica para
 // sempre e NÃO deslizam +1 ano na virada de 1º de janeiro. Só mude este valor se
@@ -288,7 +288,6 @@ let ANO, MES, ABS_NOW;
 function refreshAgora(){ const h=new Date(); ANO=h.getFullYear(); MES=h.getMonth(); ABS_NOW=absIdx(ANO, MES); }
 refreshAgora();
 function stAbs(a){ return a<ABS_NOW?"b":a===ABS_NOW?"a":"e"; }
-
 // ── CURVAS DE PREVISÃO ────────────────────────────────────────────────────────
 // curvaLinear: distribuição praticamente homogênea para contratos de Fiscalização.
 // Aplica variação determinística de ±~1.5% via senoide para soar natural sem
@@ -308,7 +307,6 @@ function curvaLinear(total, ini, n){
   }
   return r;
 }
-
 function curvaS(total, ini, n){
   if(n<=0||total<=0) return {};
   if(n===1) return {[ini]:total};
@@ -353,7 +351,6 @@ function curvaS(total, ini, n){
   }
   return r;
 }
-
 function recalc(f, total, ini, n, fn){
   fn = fn || curvaS;
   // fi = primeiro mês ainda em aberto. Para contrato futuro (ini>ABS_NOW),
@@ -374,7 +371,6 @@ function recalc(f, total, ini, n, fn){
   }
   return novo;
 }
-
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 // Escapa texto livre antes de injetar no HTML (defesa contra XSS via import/JSON).
 // Cobre contexto de texto e de atributo (aspas simples e duplas).
@@ -405,6 +401,12 @@ function hasAutoPrev(c){ return isO(c)||isFisc(c); }
 function prevFn(c){ return isFisc(c)?curvaLinear:curvaS; }
 function getUF(loc){ const m=String(loc||'').match(/\/([A-Z]{2})(?:[\s(]|$)/); return m?m[1]:''; }
 function getConselho(loc){ return UF_CONSELHO[getUF(loc)]||'—'; }
+// Lista de Conselhos Regionais presentes na base (para os selects de filtro).
+// Ordena alfabeticamente e joga '—' (sem UF identificada) para o fim.
+function listaConselhos(lista){
+  const set=new Set((lista||contratos).map(c=>getConselho(c.localidade)));
+  return [...set].sort((a,b)=>a==='—'?1:b==='—'?-1:a.localeCompare(b,'pt-BR'));
+}
 function prazoLabel(ini,n){ if(n<=0)return"—"; const s=fromAbs(ini),e=fromAbs(ini+n-1); return `${MESES[s.mes]}/${s.ano} → ${MESES[e.mes]}/${e.ano} (${n}m)`; }
 // Prazo total do contrato, com cap em MAX_MESES para evitar Array gigante caso
 // o valor chegue corrompido via import. Negativos viram zero.
@@ -423,12 +425,10 @@ function calcDivergencia(cid){
   if(total<=0) return null;
   return parseFloat((calcSomaDraft(cid)-total).toFixed(2));
 }
-
 // ── ESTADO GLOBAL ────────────────────────────────────────────────────────────
 let fluxoSenat = {};   // SENAT cash flows para contratos com rateio
 let draftsSenat = {};
 let manualsSenat = {};
-
 let contratos = [
   {id:1,responsavel:"Rafael",entidade:"SEST",projeto:"Centro de Formação Porto Velho",categoria:"Implantação de Novas Unidades",localidade:"Porto Velho/RO (N)",servico:"Obra",conta_contabil:"Imobilizado em Andamento",valorTotal:1500000,mesAbsInicio:ABS_NOW-3,mesesExecucao:12},
   {id:2,responsavel:"Gabriela",entidade:"SENAT",projeto:"Obra Sede Aracaju",categoria:"Reforma Unidades",localidade:"Aracaju/SE (S)",servico:"Obra",conta_contabil:"Imobilizado em Andamento",valorTotal:800000,mesAbsInicio:ABS_NOW-1,mesesExecucao:8},
@@ -437,10 +437,8 @@ let contratos = [
   {id:5,responsavel:"Gilson",entidade:"SEST",projeto:"Manutenção Predial Ji-Paraná",categoria:"Manutenção Infraestrutura Predial",localidade:"Ji-Paraná/RO (N)",servico:"Manutenção e Conservação de Bens Imóveis",conta_contabil:"Manutenção e Conservação de Bens Imóveis",valorTotal:180000,mesAbsInicio:ABS_NOW-2,mesesExecucao:6},
   {id:6,responsavel:"Leonardo",entidade:"SENAT",projeto:"Reforma Sede Recife",categoria:"Reforma DEX",localidade:"Recife/PE (S)",servico:"Obra",conta_contabil:"Imobilizado em Andamento",valorTotal:5500000,mesAbsInicio:absIdx(ANO-1,10),mesesExecucao:18},
 ];
-
 // PRNG determinístico para os dados de demonstração (mesma carga inicial sempre)
 function seedRand(seed){ let s=seed>>>0; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
-
 let fluxo = {};
 contratos.forEach(c=>{
   fluxo[c.id]={};
@@ -454,19 +452,19 @@ contratos.forEach(c=>{
     }
   }
 });
-
 let selId = contratos[0].id;
 let drafts = {};   // draft por contrato id
 let manuals = {};  // manual edits por contrato id
 contratos.forEach(c=>{ drafts[c.id]={...fluxo[c.id]}; manuals[c.id]={}; draftsSenat[c.id]={}; manualsSenat[c.id]={}; });
-
 let paginaAtual = 'contratos';
 let anoSel = ANO;
 let filtEnt = 'Todas';
 let filtCat = 'Todas';
 let filtResp = 'Todos';
 let filtLote = 'Todos';
+let filtCr = 'Todos';      // Conselho Regional — filtro da Dashboard
 let filtRespCt = 'Todos';
+let filtCrCt = 'Todos';    // Conselho Regional — filtro da lista de Contratos
 let drillConta = null;
 let configSection = 'contas';
 let showNovoModal = false;
@@ -475,10 +473,8 @@ let editForm = {};
 let novoForm = {responsavel:'',entidade:'SEST',projeto:'',categoria:'Implantação de Novas Unidades',localidade:'Departamento Executivo',servico:'Obra',conta_contabil:'Imobilizado em Andamento',valorTotal:'',mesesExecucao:'6',mesInicio:MES,anoInicio:ANO,mesAbsInicio:String(ABS_NOW),rateio:false,sestPct:80};
 let chartNoAnim = false; // one-shot: pula a animação do gráfico durante edição de meses
 let contratosListScrollTop = 0; // preserva a posição da rolagem da lista de contratos entre re-renderizações
-
 // ── HELPERS RATEIO ────────────────────────────────────────────────────────────
 function hasRateio(c){ return !!(c && c.rateio); }
-
 // Ajuste auxiliar de servico→conta_contabil. Antes era inline e
 // substituía silenciosamente; agora avisa o usuário via toast.
 function onServicoChange(form, val){
@@ -491,7 +487,6 @@ function onServicoChange(form, val){
     toast('Conta contábil ajustada para Serviços Técnicos Profissionais');
   }
 }
-
 function getValorSest(c){
   if(!hasRateio(c)) return c.valorTotal;
   return parseFloat((c.valorTotal * c.rateio.sestPct / 100).toFixed(2));
@@ -506,11 +501,9 @@ function getValorTotalEnt(c, ent){
   const sestTotal = parseFloat((total * c.rateio.sestPct / 100).toFixed(2));
   return ent === 'senat' ? parseFloat((total - sestTotal).toFixed(2)) : sestTotal;
 }
-
 function getFluxoObj(cid, ent){ return ent === 'senat' ? (fluxoSenat[cid]||{}) : (fluxo[cid]||{}); }
 function getDraftObj(cid, ent){ return ent === 'senat' ? (draftsSenat[cid]||{}) : (drafts[cid]||{}); }
 function getManualObj(cid, ent){ return ent === 'senat' ? (manualsSenat[cid]||{}) : (manuals[cid]||{}); }
-
 function calcSomaDraftEnt(cid, ent){
   const c=contratos.find(x=>x.id===cid);
   const idxs=getIdxs(c);
@@ -532,7 +525,6 @@ function calcDivOk(cid){
   const d=calcDivergencia(cid);
   return d===null||Math.abs(d)<=DIV_TOL;
 }
-
 // Permite salvar quando a diferença é apenas residual de arredondamento.
 // O ajuste exato é feito em ajustarResiduoCentavos() antes de persistir.
 function calcPodeSalvar(cid){
@@ -573,7 +565,6 @@ function ajustarResiduoCentavos(cid){
   if(hasRateio(c)) return ajustarResiduoEnt(cid,'sest') && ajustarResiduoEnt(cid,'senat');
   return ajustarResiduoEnt(cid,'sest');
 }
-
 // Valor do contrato no mês absoluto `ai`, respeitando o filtro de entidade.
 // Rateio: SEST=fluxo, SENAT=fluxoSenat — cada casa entra só na sua visão.
 // Não-rateio: pertence apenas à entidade-base do contrato.
@@ -588,14 +579,12 @@ function valorMesEnt(c, ai, fEnt){
   if(fEnt!=='Todas' && c.entidade!==fEnt) return 0;
   return f[ai]||0;
 }
-
 // ── TOAST ────────────────────────────────────────────────────────────────────
 function toast(msg){
   const d=document.createElement('div');d.className='toast';d.innerHTML=ico('check',13)+' '+msg;
   document.getElementById('toast-area').appendChild(d);
   setTimeout(()=>d.remove(),2800);
 }
-
 // ── NAVEGAÇÃO ────────────────────────────────────────────────────────────────
 function showPage(p){
   refreshAgora();
@@ -618,7 +607,6 @@ function showPage(p){
   else if(p==='dashboard') renderDashboard();
   else renderConfig();
 }
-
 // ── MESES GRID ───────────────────────────────────────────────────────────────
 function buildMesesGrid(c, idxs, isObra, ent){
   const f=getFluxoObj(c.id,ent);
@@ -656,13 +644,11 @@ function buildMesesGrid(c, idxs, isObra, ent){
   }
   return html;
 }
-
 function recalcObraFuture(cid, ent){
   const c=contratos.find(x=>x.id===cid);
   const pT=prazoTotal(c);
   const prazoSet=new Set(getIdxs(c));
   const fn=prevFn(c);
-
   if(hasRateio(c)){
     // Em rateio, distribui o SALDO TOTAL via Curva S única e fatiar cada mês
     // pela proporção configurada. Mantém o ratio SEST/SENAT mês-a-mês — antes,
@@ -691,7 +677,6 @@ function recalcObraFuture(cid, ent){
     }
     return;
   }
-
   // Sem rateio: comportamento original (uma única casa).
   const vT=getValorTotalEnt(c, ent||'sest');
   const fObj=getFluxoObj(cid,ent), dObj=getDraftObj(cid,ent), mObj=getManualObj(cid,ent);
@@ -703,13 +688,11 @@ function recalcObraFuture(cid, ent){
   for(let a=ABS_NOW+1;a<c.mesAbsInicio+pT;a++){if(prazoSet.has(a)&&!mObj[a])livres.push(a);}
   if(livres.length>0){const sub=fn(saldo,livres[0],livres.length);livres.forEach((a,i)=>{(ent==='senat'?draftsSenat:drafts)[cid][a]=sub[livres[0]+i]||0;});}
 }
-
 function onMesChange(cid, absI, val, isObra, ent, ev){
   const v=Number(val)||0;
   const c=contratos.find(x=>x.id===cid);
   if(ent==='senat'){ draftsSenat[cid]=draftsSenat[cid]||{}; draftsSenat[cid][absI]=v; }
   else { drafts[cid][absI]=v; }
-
   // Em rateio, propaga o valor editado proporcionalmente para a outra casa
   // (mantém o ratio no mês editado; recalcObraFuture cuida dos futuros).
   if(hasRateio(c)){
@@ -722,7 +705,6 @@ function onMesChange(cid, absI, val, isObra, ent, ev){
       draftsSenat[cid]=draftsSenat[cid]||{}; draftsSenat[cid][absI]=vN;
     }
   }
-
   if(isObra){
     // Marca o mês editado como manual (em ambas as casas se houver rateio).
     if(absI>ABS_NOW){
@@ -738,7 +720,6 @@ function onMesChange(cid, absI, val, isObra, ent, ev){
     // recalcObraFuture trata rateio internamente (uma única chamada).
     recalcObraFuture(cid, ent||'sest');
   }
-
   // Captura o campo que receberá o foco (Tab/click) ANTES do re-render,
   // pois renderContratos() recria o DOM e o navegador perderia o foco.
   const nextAbs = ev && ev.relatedTarget && ev.relatedTarget.dataset ? ev.relatedTarget.dataset.abs : null;
@@ -749,7 +730,6 @@ function onMesChange(cid, absI, val, isObra, ent, ev){
     if(nx) nx.focus();
   }
 }
-
 // ── RENDER CONTRATOS ─────────────────────────────────────────────────────────
 function renderContratos(){
   refreshAgora();
@@ -765,12 +745,17 @@ function renderContratos(){
     const vN=hasRateio(c)?(st==='e'?(draftsSenat[c.id]?.[a]??0):(fluxoSenat[c.id]?.[a]??0)):0;
     return s+vS+vN;
   },0):0;
-
-  // lista (filtrável por responsável)
+  // lista (filtrável por responsável e por Conselho Regional)
   const respOpts=['Todos',...[...new Set([...RESPONSAVEIS,...contratos.map(c=>(c.responsavel||'').trim()).filter(Boolean)])].sort()];
   if(filtRespCt!=='Todos'&&!respOpts.includes(filtRespCt)) filtRespCt='Todos';
-  const ctFiltrados=contratos.filter(x=>filtRespCt==='Todos'||(x.responsavel||'').trim()===filtRespCt);
-
+  const crOpts=['Todos',...listaConselhos(contratos)];
+  if(filtCrCt!=='Todos'&&!crOpts.includes(filtCrCt)) filtCrCt='Todos';
+  const ctFiltrados=contratos.filter(x=>
+    (filtRespCt==='Todos'||(x.responsavel||'').trim()===filtRespCt)&&
+    (filtCrCt==='Todos'||getConselho(x.localidade)===filtCrCt)
+  );
+  const temFiltroCt=filtRespCt!=='Todos'||filtCrCt!=='Todos';
+  const filtroCtLabel=[filtRespCt!=='Todos'?filtRespCt:null,filtCrCt!=='Todos'?filtCrCt:null].filter(Boolean).join(' + ');
   let listaHtml=ctFiltrados.map(x=>{
     const tp=prazoTotal(x);
     const entLabel=hasRateio(x)
@@ -782,7 +767,6 @@ function renderContratos(){
       <div class="ci-prazo">${ico('calendar',10)} ${tp}m · ${prazoLabel(x.mesAbsInicio,tp)}</div>
     </div>`;
   }).join('');
-
   // painel direito
   let painelHtml=`<div class="fc"><div class="empty"><div class="ei">${ico('pointer',36)}</div><p>Selecione um contrato</p></div></div>`;
   if(c){
@@ -794,7 +778,6 @@ function renderContratos(){
       const entBadge=hasRateio(c)
         ?`<span class="rateio-pct sest">SEST ${c.rateio.sestPct}%</span> <span class="rateio-pct senat">SENAT ${c.rateio.senatPct}%</span>`
         :`<span class="chip ${c.entidade==='SEST'?'sest-c':'senat-c'}">${esc(c.entidade)}</span>`;
-
       // seções financeiras (rateio: duas independentes; normal: uma)
       let financeSections='';
       if(hasRateio(c)){
@@ -824,7 +807,6 @@ function renderContratos(){
           ${diverg!==null?`<span style="font-size:10px;font-weight:600;${divOk?'color:var(--acc)':'color:var(--dan)'}">${divOk?ico('check',11)+' Valores balanceados':ico('alert',11)+' Divergência: '+fmt(Math.abs(diverg))+(diverg>0?' a mais':' a menos')}</span>`:`<span style="font-size:10px;color:var(--obra)">${ico('alert',11)} Sem valor total — defina em Editar para validar</span>`}
         </div>`;
       }
-
       painelHtml=`<div class="fc">
         <div class="fc-hd"><h3>${esc(c.projeto)}</h3><div style="display:flex;align-items:center;gap:8px"><button class="btn btn-s" style="padding:5px 10px;font-size:11px" onclick="abrirEditModal(${c.id})">${ico('edit',11)} Editar</button><span class="ttag">${fmt(totC)}</span></div></div>
         <div class="prazo-sec">
@@ -868,17 +850,17 @@ function renderContratos(){
       </div>`;
     }
   }
-
   ct.innerHTML=`
     <div class="ph"><div><div class="ph-title">Contratos</div><div class="ph-sub">Todos os meses de execução do contrato</div></div>
     <button class="btn btn-p" onclick="abrirNovoModal()">${ico('plus',13)} Novo Contrato</button></div>
     <div class="ct"><div class="gl">
       <div class="clist">
-        <div class="clist-hd">Contratos (${ctFiltrados.length}${filtRespCt!=='Todos'?` / ${contratos.length}`:''})</div>
-        <div style="padding:7px 10px;border-bottom:1px solid var(--bor)">
-          <select class="fsel" style="width:100%" onchange="setFiltRespCt(this.value)" title="Filtrar por responsável (define o lote ao exportar)">${respOpts.map(r=>`<option${r===filtRespCt?' selected':''}>${r==='Todos'?'Todos os responsáveis':esc(r)}</option>`).join('')}</select>
+        <div class="clist-hd">Contratos (${ctFiltrados.length}${temFiltroCt?` / ${contratos.length}`:''})</div>
+        <div class="clist-filtros">
+          <select class="fsel" onchange="setFiltRespCt(this.value)" title="Filtrar por responsável (define o lote ao exportar)">${respOpts.map(r=>`<option${r===filtRespCt?' selected':''}>${r==='Todos'?'Todos os responsáveis':esc(r)}</option>`).join('')}</select>
+          <select class="fsel" onchange="setFiltCrCt(this.value)" title="Filtrar por Conselho Regional (derivado da UF da localidade). Não afeta a exportação de lote, que segue o responsável.">${crOpts.map(r=>`<option${r===filtCrCt?' selected':''}>${r==='Todos'?'Todos os conselhos':esc(r)}</option>`).join('')}</select>
         </div>
-        <div class="clist-bd" onscroll="contratosListScrollTop=this.scrollTop">${listaHtml||`<div style="padding:18px;text-align:center;font-size:11px;color:var(--mut)">Nenhum contrato para «${esc(filtRespCt)}»</div>`}</div>
+        <div class="clist-bd" onscroll="contratosListScrollTop=this.scrollTop">${listaHtml||`<div style="padding:18px;text-align:center;font-size:11px;color:var(--mut)">Nenhum contrato para «${esc(filtroCtLabel||'Todos')}»</div>`}</div>
       </div>
       ${painelHtml}
     </div></div>
@@ -892,7 +874,6 @@ function renderContratos(){
     if(cv&&c)drawContratoChart(cv,c);
   },0);
 }
-
 function buildObraPanel(c){
   const isF=isFisc(c);
   // Visual: Obra=laranja (var --obra); Fiscalização=ciano (var --acc2).
@@ -904,7 +885,6 @@ function buildObraPanel(c){
   const pT=prazoTotal(c);
   const vT=c.valorTotal;
   const idxs=getIdxs(c);
-
   // Totais combinados (SEST + SENAT)
   const fS=fluxo[c.id]||{}, dS=drafts[c.id]||{};
   const fN=fluxoSenat[c.id]||{}, dN=draftsSenat[c.id]||{};
@@ -914,12 +894,10 @@ function buildObraPanel(c){
   const saldo=Math.max(0,vT-tPago);
   const prog=vT>0?Math.min(100,Math.round(tPago/vT*100)):0;
   const divOkAll=calcDivOk(c.id);
-
   // entidade badge
   const entBadge=hasRateio(c)
     ?`<span class="rateio-pct sest">SEST ${c.rateio.sestPct}%</span> <span class="rateio-pct senat">SENAT ${c.rateio.senatPct}%</span>`
     :`<span class="chip ${c.entidade==='SEST'?'sest-c':'senat-c'}">${esc(c.entidade)}</span>`;
-
   // seções de cronograma (rateio: duas; normal: uma)
   let cronSections='';
   if(hasRateio(c)){
@@ -954,11 +932,9 @@ function buildObraPanel(c){
       ${diverg!==null?`<span style="font-size:10px;font-weight:600;${divOk?'color:var(--acc)':'color:var(--dan)'}">${divOk?ico('check',11)+' Valores balanceados':ico('alert',11)+' Divergência: '+fmt(Math.abs(diverg))+(diverg>0?' a mais':' a menos')}</span>`:`<span style="font-size:10px;color:var(--obra)">${ico('alert',11)} Sem valor total</span>`}
     </div>`;
   }
-
   const bdgStyle=`background:${tipoColorBg};color:${tipoColor};padding:2px 8px;border-radius:20px;font-size:13px;font-weight:700;white-space:nowrap`;
   const banStyle=`background:${isF?'rgba(34,211,238,.06)':'rgba(245,158,11,.07)'};border-bottom:1px solid ${isF?'rgba(34,211,238,.18)':'rgba(245,158,11,.18)'};padding:9px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap`;
   const btnReapStyle=`background:${isF?'rgba(34,211,238,.12)':'rgba(245,158,11,.12)'};color:${tipoColor};border:1px solid ${isF?'rgba(34,211,238,.3)':'rgba(245,158,11,.3)'};padding:5px 10px;border-radius:7px;cursor:pointer;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif`;
-
   return `<div class="fc">
     <div class="fc-hd"><h3>${esc(c.projeto)}</h3><div style="display:flex;align-items:center;gap:8px"><button class="btn btn-s" style="padding:5px 10px;font-size:11px" onclick="abrirEditModal(${c.id})">${ico('edit',11)} Editar</button><span style="${bdgStyle}">${ico(tipoIco,10)} ${tipoLbl}</span><span class="ttag">${fmtS(vT)}</span></div></div>
     <div style="${banStyle}">
@@ -998,7 +974,6 @@ function buildObraPanel(c){
     </div>
   </div>`;
 }
-
 // ── AÇÕES CONTRATOS ───────────────────────────────────────────────────────────
 function temAlteracoesNaoSalvas(cid){
   const d=drafts[cid]||{}, f=fluxo[cid]||{};
@@ -1009,7 +984,6 @@ function temAlteracoesNaoSalvas(cid){
   for(const k of keysN){ if(Number(k)===ABS_NOW) continue; if((dN[k]||0)!==(fN[k]||0)) return true; }
   return false;
 }
-
 function selContrato(id){
   if(id!==selId && temAlteracoesNaoSalvas(selId) && !confirm('Há alterações não salvas neste contrato. Trocar mesmo assim descartará as edições.')) return;
   // Reset apenas drafts (descartar edições não salvas). NÃO reset manuals/manualsSenat:
@@ -1021,7 +995,6 @@ function selContrato(id){
   draftsSenat[id]={...(fluxoSenat[id]||{})};
   renderContratos();
 }
-
 // Remove de fluxo[cid] qualquer mês fora da janela atual do contrato.
 function podarFluxo(cid){
   const c=contratos.find(x=>x.id===cid);
@@ -1030,7 +1003,6 @@ function podarFluxo(cid){
   if(fluxo[cid]) Object.keys(fluxo[cid]).forEach(k=>{ if(!janela.has(Number(k))) delete fluxo[cid][k]; });
   if(fluxoSenat[cid]) Object.keys(fluxoSenat[cid]).forEach(k=>{ if(!janela.has(Number(k))) delete fluxoSenat[cid][k]; });
 }
-
 function salvarFluxo(cid){
   const c=contratos.find(x=>x.id===cid);
   ajustarResiduoCentavos(cid);
@@ -1049,7 +1021,6 @@ function salvarFluxo(cid){
   toast('Fluxo salvo!');
   renderContratos();
 }
-
 function limparFuturos(cid){
   const c=contratos.find(x=>x.id===cid);
   // Limpa também os flags `manuals` dos meses futuros — caso contrário, os zeros
@@ -1066,7 +1037,6 @@ function limparFuturos(cid){
   });
   renderContratos();
 }
-
 function reaplicarCurvaS(cid){
   const c=contratos.find(x=>x.id===cid);
   const fn=prevFn(c);
@@ -1090,11 +1060,9 @@ function reaplicarCurvaS(cid){
   toast(`${curvaTxt} reaplicada do zero!`);
   renderContratos();
 }
-
 // ── NOVO CONTRATO ─────────────────────────────────────────────────────────────
 function abrirNovoModal(){ showNovoModal=true; renderContratos(); }
 function fecharNovoModal(){ showNovoModal=false; renderContratos(); }
-
 function buildNovoModal(){
   const eO=novoForm.servico==='Obra';
   const eF=novoForm.servico==='Fiscalização';
@@ -1128,7 +1096,7 @@ function buildNovoModal(){
           <div class="fg"><label class="flbl">Categoria / Projeto</label><select class="fsel2" onchange="novoForm.categoria=this.value">${PROJETOS.map(p=>`<option${p===novoForm.categoria?' selected':''}>${esc(p)}</option>`).join('')}</select></div>
           <div class="fg"><label class="flbl">Tipo de Contratação</label><select class="fsel2 ${eA?'obra-hl':''}" onchange="onServicoChange(novoForm,this.value);abrirNovoModal()">${SERVICOS.map(s=>`<option${s===novoForm.servico?' selected':''}>${esc(s)}</option>`).join('')}</select></div>
           <div class="fg"><label class="flbl">Conta Contábil</label><select class="fsel2" onchange="novoForm.conta_contabil=this.value">${CONTAS.map(c=>`<option${c===novoForm.conta_contabil?' selected':''}>${esc(c)}</option>`).join('')}</select></div>
-          <div class="fg full"><label class="flbl">Localidade</label><select class="fsel2" onchange="novoForm.localidade=this.value;abrirNovoModal()">${LOCALIDADES.map(l=>`<option${l===novoForm.localidade?' selected':''}>${esc(l)}</option>`).join('')}</select></div>
+          <div class="fg full"><label class="flbl">Localidade <span style="color:var(--acc2);font-size:11px">${ico('map',10)} CR: ${getConselho(novoForm.localidade)}</span></label><select class="fsel2" onchange="novoForm.localidade=this.value;abrirNovoModal()">${LOCALIDADES.map(l=>`<option${l===novoForm.localidade?' selected':''}>${esc(l)}</option>`).join('')}</select></div>
           <div class="fg"><label class="flbl" style="color:var(--prazo)">${ico('calendar',10)} Qtd. Meses *</label><input class="finp prazo-hl" type="number" min="1" value="${esc(novoForm.mesesExecucao)}" oninput="novoForm.mesesExecucao=this.value" placeholder="6"/></div>
           <div class="fg"><label class="flbl" style="color:var(--prazo)">${ico('calendar',10)} Mês de Início</label><div style="display:flex;gap:6px;min-width:0">
             <select class="fsel2 prazo-hl" style="flex:2;width:0;min-width:0" onchange="novoForm.mesInicio=Number(this.value);novoForm.mesAbsInicio=String(absIdx(novoForm.anoInicio,novoForm.mesInicio));abrirNovoModal()">${MESES.map((m,mi)=>`<option value="${mi}"${mi===novoForm.mesInicio?' selected':''}>${m}</option>`).join('')}</select>
@@ -1145,7 +1113,6 @@ function buildNovoModal(){
     </div>
   </div>`;
 }
-
 function buildPvwBars(total,ini,n,fn,isF){
   fn=fn||curvaS;
   const lbl=isF?'Prévia Linear':'Prévia Curva S';
@@ -1156,7 +1123,6 @@ function buildPvwBars(total,ini,n,fn,isF){
     <div class="pvw-bars">${v.map(val=>`<div class="pvw-bar" style="height:${Math.round(val/mx*100)}%;background:${barBg}"></div>`).join('')}</div>
     <div style="font-size:9px;color:var(--mut);text-align:center;margin-top:3px">${prazoLabel(ini,n)}</div></div>`;
 }
-
 function cadastrarNovo(){
   if(!novoForm.responsavel.trim()||!novoForm.projeto.trim()){toast('Preencha os campos obrigatórios');return;}
   const vt=parseMoeda(novoForm.valorTotal);
@@ -1188,14 +1154,14 @@ function cadastrarNovo(){
   toast(rateioObj?(temAuto?`Contrato com rateio cadastrado! ${_curvaTxt} SEST e SENAT gerada${isFisc(novo)?'':'s'}.`:'Contrato com rateio cadastrado!'):(temAuto&&vt>0?`Contrato cadastrado! ${_curvaTxt} gerada.`:'Contrato cadastrado!'));
   renderContratos();
 }
-
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 // Filtros da dashboard: fecham o drill aberto (o conjunto de contratos muda).
 function setFiltCat(v){filtCat=v;drillConta=null;renderDashboard();}
 function setFiltResp(v){filtResp=v;drillConta=null;renderDashboard();}
 function setFiltLote(v){filtLote=v;drillConta=null;renderDashboard();}
+function setFiltCr(v){filtCr=v;drillConta=null;renderDashboard();}
 function setFiltRespCt(v){filtRespCt=v;renderContratos();}
-
+function setFiltCrCt(v){filtCrCt=v;renderContratos();}
 function renderDashboard(){
   refreshAgora();
   const el=document.getElementById('page-dashboard');
@@ -1203,16 +1169,17 @@ function renderDashboard(){
   const cats=['Todas',...PROJETOS];
   const resps=['Todos',...[...new Set(contratos.map(c=>(c.responsavel||'').trim()).filter(Boolean))].sort()];
   const lotes=['Todos',...[...new Set(contratos.map(c=>(c._lote||'').trim()).filter(Boolean))].sort()];
+  const crs=['Todos',...listaConselhos(contratos)];
   if(filtLote!=='Todos' && !lotes.includes(filtLote)) filtLote='Todos';
-
+  if(filtCr!=='Todos' && !crs.includes(filtCr)) filtCr='Todos';
   const cf=contratos.filter(c=>
     (filtEnt==='Todas'||hasRateio(c)||c.entidade===filtEnt)&&
     (filtCat==='Todas'||(c.categoria||'')=== filtCat)&&
     (filtResp==='Todos'||(c.responsavel||'').trim()===filtResp)&&
-    (filtLote==='Todos'||(c._lote||'').trim()===filtLote)
+    (filtLote==='Todos'||(c._lote||'').trim()===filtLote)&&
+    (filtCr==='Todos'||getConselho(c.localidade)===filtCr)
   );
   const mesAno=MESES.map((_,mi)=>absIdx(anoSel,mi));
-
   // consolida — conta fora da lista vai para "Não classificado" (não some)
   const consol={};[...CONTAS,NAO_CLASS].forEach(c=>{consol[c]={};MESES.forEach((_,mi)=>{consol[c][mi]=0;});});
   cf.forEach(c=>{
@@ -1223,7 +1190,6 @@ function renderDashboard(){
   const contasView=[...CONTAS,...(temNC?[NAO_CLASS]:[])];
   const tpm=MESES.map((_,mi)=>contasView.reduce((s,c)=>s+(consol[c]?.[mi]||0),0));
   const tg=tpm.reduce((s,v)=>s+v,0);
-
   // SEST: fluxo[c.id] de todos os contratos (rateio = porção SEST; não-rateio SEST = tudo)
   // SENAT: fluxoSenat[c.id] de rateio + fluxo[c.id] de não-rateio SENAT
   const tS=cf.reduce((s,c)=>{
@@ -1235,11 +1201,9 @@ function renderDashboard(){
     return c.entidade==='SENAT'?s+mesAno.reduce((a,ai)=>a+(fluxo[c.id]?.[ai]||0),0):s;
   },0);
   const tMesAtual=cf.reduce((s,c)=>s+valorMesEnt(c,ABS_NOW,filtEnt),0);
-
   // contagem de contratos por entidade (rateio conta para ambas)
   const nSest=cf.filter(c=>c.entidade==='SEST'||hasRateio(c)).length;
   const nSenat=cf.filter(c=>c.entidade==='SENAT'||hasRateio(c)).length;
-
   // tabela
   let tRows=contasView.map((conta,ci)=>{
     const tot=MESES.reduce((s,_,mi)=>s+(consol[conta]?.[mi]||0),0);
@@ -1254,12 +1218,11 @@ function renderDashboard(){
   }).join('');
   const totCells=tpm.map((v,i)=>{const ai=mesAno[i];const isPast=ai<ABS_NOW;return `<td class="${isPast?'cel-b':''}">${v===0?'—':fmtS(v)}</td>`;}).join('');
   const thCells=MESES.map((m,mi)=>{const ai=mesAno[mi];const isAt=ai===absIdx(ANO,MES);const isPast=ai<ABS_NOW;return `<th class="${isAt?'th-a':isPast?'cel-b':''}">${m}</th>`;}).join('');
-
   el.innerHTML=`
     <div class="ph"><div><div class="ph-title">Dashboard</div><div class="ph-sub">Consolidado por ano fechado</div></div></div>
     <div class="ct">
       <div class="stats">
-        <div class="stat g"><div class="stat-lbl">Total ${anoSel}</div><div class="stat-val">${fmtS(tg)}</div><div class="stat-sub">${cf.length} contratos</div></div>
+        <div class="stat g"><div class="stat-lbl">Total ${anoSel}</div><div class="stat-val">${fmtS(tg)}</div><div class="stat-sub">${cf.length} contratos${filtCr!=='Todos'?` · ${esc(filtCr)}`:''}</div></div>
         <div class="stat c"><div class="stat-lbl">Mês Atual</div><div class="stat-val">${fmtS(tMesAtual)}</div><div class="stat-sub">${MESES[MES]} ${ANO}</div></div>
         <div class="stat p"><div class="stat-lbl">SEST ${anoSel}</div><div class="stat-val" style="color:var(--sest)">${fmtS(tS)}</div><div class="stat-sub">${nSest} contrato(s)</div></div>
         <div class="stat a"><div class="stat-lbl">SENAT ${anoSel}</div><div class="stat-val" style="color:var(--senat)">${fmtS(tN)}</div><div class="stat-sub">${nSenat} contrato(s)</div></div>
@@ -1269,6 +1232,7 @@ function renderDashboard(){
         <select class="fsel" onchange="setFiltEnt(this.value)">${ents.map(e=>`<option${e===filtEnt?' selected':''}>${esc(e)}</option>`).join('')}</select>
         <select class="fsel" onchange="setFiltCat(this.value)">${cats.map(c=>`<option${c===filtCat?' selected':''}>${esc(c)}</option>`).join('')}</select>
         <select class="fsel" onchange="setFiltResp(this.value)">${resps.map(r=>`<option${r===filtResp?' selected':''}>${esc(r)}</option>`).join('')}</select>
+        <select class="fsel" onchange="setFiltCr(this.value)" title="Conselho Regional (derivado da UF da localidade)">${crs.map(r=>`<option${r===filtCr?' selected':''}>${r==='Todos'?'Todos os conselhos':esc(r)}</option>`).join('')}</select>
         <select class="fsel" onchange="setFiltLote(this.value)" title="Técnico/lote (consolidação)">${lotes.map(l=>`<option${l===filtLote?' selected':''}>${l==='Todos'?'Todos os técnicos':esc(l)}</option>`).join('')}</select>
         ${filtLote!=='Todos'?`<button onclick="removerLote()" style="background:transparent;color:var(--dan);border:1px solid rgba(248,113,113,.3);padding:5px 11px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:5px">${ico('trash',12)} Remover lote</button>`:''}
       </div>
@@ -1277,7 +1241,7 @@ function renderDashboard(){
         <div class="ccard"><h3>${ico('chart',13)} Por Conta — ${anoSel}</h3><canvas id="chart-barra" height="160"></canvas></div>
       </div>
       <div class="tcard">
-        <div class="thd"><h3>Consolidado — ${anoSel}</h3><div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;color:var(--mut)">Clique para ver contratos</span><button onclick="exportarCSV()" style="background:rgba(74,222,128,.12);color:var(--acc);border:1px solid rgba(74,222,128,.3);padding:4px 11px;border-radius:7px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif">${ico('download',12)} Exportar CSV</button></div></div>
+        <div class="thd"><h3>Consolidado — ${anoSel}${filtCr!=='Todos'?` · ${esc(filtCr)}`:''}</h3><div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;color:var(--mut)">Clique para ver contratos</span><button onclick="exportarCSV()" style="background:rgba(74,222,128,.12);color:var(--acc);border:1px solid rgba(74,222,128,.3);padding:4px 11px;border-radius:7px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif">${ico('download',12)} Exportar CSV</button></div></div>
         <div class="twrap"><table>
           <thead><tr><th>Conta Contábil</th>${thCells}<th>Total</th></tr></thead>
           <tbody>${tRows}<tr class="tr-tot"><td>TOTAL GERAL</td>${totCells}<td>${fmt(tg)}</td></tr></tbody>
@@ -1291,7 +1255,6 @@ function renderDashboard(){
   const cb=document.getElementById('chart-barra');
   if(cb) animChart(cb, p=>drawBarra(cb,MESES,contasView,consol,p));
 }
-
 function catmullRomPts(pts, detail=10){
   if(pts.length<2)return[...pts];
   const out=[];
@@ -1308,7 +1271,6 @@ function catmullRomPts(pts, detail=10){
   out.push(pts[pts.length-1]);
   return out;
 }
-
 function animChart(canvas, drawFn){
   const dur=750, t0=performance.now();
   function step(now){
@@ -1320,7 +1282,6 @@ function animChart(canvas, drawFn){
   }
   requestAnimationFrame(step);
 }
-
 function drawContratoChart(canvas, c){
   if(!canvas)return;
   const noAnim=chartNoAnim; chartNoAnim=false;
@@ -1329,7 +1290,6 @@ function drawContratoChart(canvas, c){
   const D=10;
   const labels=idxs.map(a=>{const{mes,ano}=fromAbs(a);return `${MESES[mes]}/${String(ano).slice(2)}`;});
   const futurIdx=idxs.findIndex(a=>stAbs(a)==='e');
-
   // Acumulado por casa
   let cumulativeS, cumulativeN;
   if(hasRateio(c)){
@@ -1342,7 +1302,6 @@ function drawContratoChart(canvas, c){
     const mS=idxs.map(a=>{const st=stAbs(a);return st==='e'?(drafts[c.id]?.[a]||0):(fluxo[c.id]?.[a]||0);});
     let cum=0; cumulativeS=mS.map(v=>(cum+=v)); cumulativeN=null;
   }
-
   const drawFrame=p=>{
     if(!canvas.parentElement)return;
     const ctx=canvas.getContext('2d');
@@ -1357,7 +1316,6 @@ function drawContratoChart(canvas, c){
     const cSampledN=cumulativeN?catmullRomPts(cumulativeN.map((v,i)=>({x:xOf(i),y:yOf(v)})),D):null;
     const splitSample=futurIdx>0?futurIdx*D:cSampledS.length;
     const visLen=Math.max(2,Math.ceil(p*cSampledS.length));
-
     function drawCurve(sampled, color){
       const pastVis=sampled.slice(0,Math.min(visLen,splitSample));
       if(pastVis.length>=2){
@@ -1378,7 +1336,6 @@ function drawContratoChart(canvas, c){
       const fp=sampled[Math.min(visLen-1,sampled.length-1)];
       if(fp){ctx.fillStyle=color;ctx.beginPath();ctx.arc(fp.x,fp.y,3.5,0,Math.PI*2);ctx.fill();}
     }
-
     ctx.clearRect(0,0,W,H);
     // grade
     ctx.strokeStyle='#22283a';ctx.lineWidth=1;
@@ -1420,7 +1377,6 @@ function drawContratoChart(canvas, c){
   };
   if(noAnim) drawFrame(1); else animChart(canvas,drawFrame);
 }
-
 function drawLinha(canvas, labels, data, progress=1){
   if(!canvas)return;
   const ctx=canvas.getContext('2d');
@@ -1446,7 +1402,6 @@ function drawLinha(canvas, labels, data, progress=1){
   ctx.textAlign='right';
   for(let i=0;i<=2;i++){const v=mx*i/2;const y=pad+(H-pad-pb)*(1-i/2);ctx.fillText(fmtS(v),pad-4,y+3);}
 }
-
 function drawBarra(canvas, labels, contas, consol, progress=1){
   if(!canvas)return;
   const ctx=canvas.getContext('2d');
@@ -1472,7 +1427,6 @@ function drawBarra(canvas, labels, contas, consol, progress=1){
   ctx.fillStyle='#6b7280';ctx.font='9px DM Sans,sans-serif';ctx.textAlign='center';
   labels.forEach((l,i)=>{ctx.fillText(l,pad+i*(barW+2)+barW/2,H-10);});
 }
-
 function buildDrillModal(conta, cf, mesAno){
   const dd=cf.filter(c=>conta===NAO_CLASS?!CONTAS.includes(c.conta_contabil):c.conta_contabil===conta).map(c=>({...c,
     meses:mesAno.map(ai=>valorMesEnt(c,ai,filtEnt)),
@@ -1489,19 +1443,17 @@ function buildDrillModal(conta, cf, mesAno){
   </tr>`).join('');
   return `<div class="overlay" onclick="closeDrill()">
     <div class="modal" style="width:min(900px,95vw)" onclick="event.stopPropagation()">
-      <div class="mhd"><div><h2><span class="chip" style="background:${corC(conta)}22;color:${corC(conta)}">${ico('dot',8)} ${esc(conta)}</span> — ${anoSel}</h2><div style="font-size:11px;color:var(--mut);margin-top:2px">${dd.length} contrato(s)</div></div><button class="mclose" onclick="closeDrill()">${ico('x',15)}</button></div>
+      <div class="mhd"><div><h2><span class="chip" style="background:${corC(conta)}22;color:${corC(conta)}">${ico('dot',8)} ${esc(conta)}</span> — ${anoSel}</h2><div style="font-size:11px;color:var(--mut);margin-top:2px">${dd.length} contrato(s)${filtCr!=='Todos'?` · ${esc(filtCr)}`:''}</div></div><button class="mclose" onclick="closeDrill()">${ico('x',15)}</button></div>
       <div class="mbody">${dd.length===0?`<div class="empty"><div class="ei">${ico('inbox',36)}</div><p>Nenhum contrato</p></div>`:`<div class="twrap"><table>
         <thead><tr><th style="text-align:left">Contrato</th><th style="text-align:left">CR</th><th style="text-align:center">Ent.</th><th style="text-align:center">Prazo</th>${MESES.map(m=>`<th>${m}</th>`).join('')}<th>Total ${anoSel}</th></tr></thead>
         <tbody>${rows}</tbody></table></div>`}</div>
     </div>
   </div>`;
 }
-
 function openDrill(conta){ drillConta=conta; renderDashboard(); }
 function closeDrill(){ drillConta=null; renderDashboard(); }
 function setAno(a){ anoSel=a; drillConta=null; renderDashboard(); }
 function setFiltEnt(v){ filtEnt=v; drillConta=null; renderDashboard(); }
-
 // Remove todos os contratos do lote atualmente filtrado (sem digitar nada).
 function removerLote(){
   if(filtLote==='Todos') return;
@@ -1522,7 +1474,6 @@ function removerLote(){
   toast(`Lote «${esc(alvo[0]._lote)}» removido (${alvo.length} contrato(s))`);
   showPage(paginaAtual);
 }
-
 // ── CONFIGURAÇÕES ─────────────────────────────────────────────────────────────
 function renderConfig(){
   const el=document.getElementById('page-config');
@@ -1536,11 +1487,10 @@ function renderConfig(){
   const sec=sections.find(s=>s.key===configSection)||sections[0];
   const listItems=sec.list.map((item,i)=>`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:8px;background:var(--sur2);margin-bottom:5px">
-      <span style="font-size:12px">${esc(item)}</span>
+      <span style="font-size:12px">${esc(item)}${sec.key==='localidades'?` <span class="cr" style="margin-left:4px">${getConselho(item)}</span>`:''}</span>
       <button onclick="removeConfigItem('${sec.key}',${i})" style="background:none;border:none;color:var(--dan);cursor:pointer;padding:2px 6px" title="Remover">${ico('x',12)}</button>
     </div>`).join('');
   const tabs=sections.map(s=>`<div class="atab${s.key===configSection?' active':''}" onclick="setConfigSection('${s.key}')" style="display:flex;align-items:center;gap:5px">${s.icon} ${s.label}</div>`).join('');
-
   el.innerHTML=`
     <div class="ph"><div><div class="ph-title">Configurações</div><div class="ph-sub">Gerencie as listas utilizadas nos formulários</div></div></div>
     <div class="ct">
@@ -1561,6 +1511,7 @@ function renderConfig(){
         <div class="tcard" style="margin-bottom:0">
           <div class="thd"><h3>${sec.icon} ${sec.label} <span style="font-size:11px;color:var(--mut);font-weight:400">(${sec.list.length} itens)</span></h3></div>
           <div style="padding:12px 16px">
+            ${sec.key==='localidades'?`<div style="font-size:11px;color:var(--mut);margin-bottom:10px">${ico('map',11)} O Conselho Regional é derivado automaticamente da UF no nome da localidade (ex.: "Cidade/MG (B 00)" → CRMG). Localidades sem UF ficam como «—» e podem ser filtradas por esse valor.</div>`:''}
             <div style="display:flex;gap:8px;margin-bottom:14px">
               <input id="cfg-input" class="finp" style="flex:1" placeholder="Novo item..." onkeydown="if(event.key==='Enter')addConfigItem('${sec.key}')"/>
               <button class="btn btn-p" onclick="addConfigItem('${sec.key}')">${ico('plus',13)} Adicionar</button>
@@ -1572,7 +1523,6 @@ function renderConfig(){
     </div>`;
 }
 function setConfigSection(k){ configSection=k; renderConfig(); }
-
 function setTecnicoId(){
   const v=(document.getElementById('tec-input')?.value||'').trim();
   if(!v){ toast('Informe a identificação do técnico'); return; }
@@ -1580,7 +1530,6 @@ function setTecnicoId(){
      !confirm(`Alterar a identificação de «${tecnicoId}» para «${v}»?\n\nArquivos já exportados com o nome antigo serão tratados como de outro técnico na consolidação.`)) return;
   tecnicoId=v; salvarStorage(); toast(`Identificação salva: ${esc(tecnicoId)}`); renderConfig();
 }
-
 function addConfigItem(key){
   const inp=document.getElementById('cfg-input');
   const val=(inp?.value||'').trim();
@@ -1592,7 +1541,6 @@ function addConfigItem(key){
   else if(key==='servicos'){ if(SERVICOS.includes(val)){toast('Tipo já existe');return;} SERVICOS.push(val); }
   salvarStorage(); toast('Item adicionado!'); renderConfig();
 }
-
 function removeConfigItem(key,idx){
   const campo={contas:'conta_contabil',projetos:'categoria',localidades:'localidade',responsaveis:'responsavel',servicos:'servico'}[key];
   const lista={contas:CONTAS,projetos:PROJETOS,localidades:LOCALIDADES,responsaveis:RESPONSAVEIS,servicos:SERVICOS}[key];
@@ -1603,11 +1551,9 @@ function removeConfigItem(key,idx){
   if(usos>0){ toast(`Não é possível remover: ${usos} contrato(s) usam "${esc(item)}"`); return; }
   lista.splice(idx,1); salvarStorage(); renderConfig();
 }
-
 // ── PERSISTÊNCIA localStorage ─────────────────────────────────────────────────
 const STORAGE_KEY = 'fluxocaixa_v1';
 let tecnicoId = ''; // identidade do técnico desta máquina (vai gravada no JSON exportado)
-
 // Converte qualquer base/arquivo lido para o formato da versão ATUAL.
 // Cada bloco `if(v < N)` transforma o dado da versão anterior e avança `v`.
 function migrar(dados){
@@ -1628,9 +1574,7 @@ function migrar(dados){
   dados.schemaVersion = SCHEMA_VERSION;
   return dados;
 }
-
 let storageOk = true;
-
 function salvarStorage(){
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -1647,7 +1591,6 @@ function salvarStorage(){
   }
   if(typeof renderStorageBar==='function') renderStorageBar();
 }
-
 function carregarStorage(){
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -1676,11 +1619,10 @@ function carregarStorage(){
     return true;
   } catch(e){ console.warn('Erro ao carregar:', e); return false; }
 }
-
-function slug(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'').toLowerCase()||'sem_tecnico'; }
-
+function slug(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_+|_+$/g,'').toLowerCase()||'sem_tecnico'; }
 function exportarJSON(){
   // O lote é definido pelo filtro de responsável da aba Contratos.
+  // O filtro de Conselho Regional NÃO restringe a exportação (o lote é do técnico inteiro).
   let lote='', alvo=contratos;
   if(filtRespCt!=='Todos'){
     lote=filtRespCt;
@@ -1714,15 +1656,16 @@ function exportarJSON(){
   a.download = `fluxocaixa_${slug(lote||'base_completa')}_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  toast(lote?`Lote exportado: «${esc(lote)}» (${alvo.length} contrato(s))`:`Backup completo exportado (${alvo.length} contrato(s))`);
+  const notaCr = filtCrCt!=='Todos' ? ' · filtro de conselho ignorado na exportação' : '';
+  toast((lote?`Lote exportado: «${esc(lote)}» (${alvo.length} contrato(s))`:`Backup completo exportado (${alvo.length} contrato(s))`)+notaCr);
 }
-
 function exportarCSV(){
   const cf=contratos.filter(c=>
     (filtEnt==='Todas'||hasRateio(c)||c.entidade===filtEnt)&&
     (filtCat==='Todas'||(c.categoria||'')===filtCat)&&
     (filtResp==='Todos'||(c.responsavel||'').trim()===filtResp)&&
-    (filtLote==='Todos'||(c._lote||'').trim()===filtLote)
+    (filtLote==='Todos'||(c._lote||'').trim()===filtLote)&&
+    (filtCr==='Todos'||getConselho(c.localidade)===filtCr)
   );
   const mesAno=MESES.map((_,mi)=>absIdx(anoSel,mi));
   const consol={};[...CONTAS,NAO_CLASS].forEach(c=>{consol[c]={};MESES.forEach((_,mi)=>{consol[c][mi]=0;});});
@@ -1740,6 +1683,7 @@ function exportarCSV(){
     filtEnt==='Todas'?'Todas as entidades':filtEnt,
     filtCat==='Todas'?null:`Projeto: ${filtCat}`,
     filtResp==='Todos'?null:`Resp.: ${filtResp}`,
+    filtCr==='Todos'?null:`CR: ${filtCr}`,
     filtLote==='Todos'?null:`Técnico: ${filtLote}`
   ].filter(Boolean);
   rows.push([`Consolidado por Conta Contábil — ${anoSel} — ${filtroParts.join(' · ')}`].join(sep));
@@ -1756,11 +1700,10 @@ function exportarCSV(){
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url;a.download=`consolidado_${anoSel}_${filtEnt==='Todas'?'todos':filtEnt.toLowerCase()}.csv`;
+  a.href=url;a.download=`consolidado_${anoSel}_${filtEnt==='Todas'?'todos':filtEnt.toLowerCase()}${filtCr==='Todos'?'':'_'+slug(filtCr)}.csv`;
   a.click();URL.revokeObjectURL(url);
   toast('CSV exportado!');
 }
-
 function importarJSON(){
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = '.json';
@@ -1791,6 +1734,7 @@ function importarJSON(){
           manualsSenat[c.id]= dados.manualsSenat?.[c.id] || {};
         });
         selId = contratos[0]?.id ?? null;
+        filtCrCt='Todos'; filtCr='Todos';
         salvarStorage();
         toast('Dados importados com sucesso!');
         showPage(paginaAtual);
@@ -1800,7 +1744,6 @@ function importarJSON(){
   };
   inp.click();
 }
-
 // Importa o JSON de um técnico SEM apagar a base mestra.
 // Idempotente por lote: reimportar o arquivo do mesmo técnico substitui
 // apenas os contratos daquele técnico, preservando os dos demais.
@@ -1814,7 +1757,6 @@ function importarMesclar(){
       try {
         const dados = migrar(JSON.parse(ev.target.result));
         if(!Array.isArray(dados.contratos) || !dados.fluxo){ toast('Arquivo inválido!'); return; }
-
         // Identidade vem GRAVADA no arquivo (definida na máquina do técnico).
         let lote = typeof dados.tecnico === 'string' ? dados.tecnico.trim() : '';
         if(!lote){
@@ -1829,12 +1771,10 @@ function importarMesclar(){
           ? `Arquivo do técnico «${lote}».\n\nIsto vai SUBSTITUIR os ${jaImportados} contrato(s) já importados deste técnico pelos ${dados.contratos.length} do arquivo.\nOs contratos dos demais técnicos não são afetados.`
           : `Arquivo do técnico «${lote}».\n\nSerão adicionados ${dados.contratos.length} contrato(s). Nenhum lote anterior deste técnico existe na base.`) + aviso + `\n\nConfirmar?`;
         if(!confirm(msg)){ toast('Importação cancelada'); return; }
-
         // 1. Une as listas de config (idempotente; necessário antes de validar contas)
         const uni = (alvo, vinda) => { if(Array.isArray(vinda)) vinda.forEach(v => { if(!alvo.includes(v)) alvo.push(v); }); };
         uni(CONTAS, dados.contas); uni(PROJETOS, dados.projetos); uni(LOCALIDADES, dados.localidades);
         uni(RESPONSAVEIS, dados.responsaveis); uni(SERVICOS, dados.servicos);
-
         // 2. Monta TUDO em estruturas temporárias antes de tocar no estado global.
         const baseSemLote = contratos.filter(c => String(c._lote||'').toLowerCase() !== chave);
         const removidos   = contratos.filter(c => String(c._lote||'').toLowerCase() === chave);
@@ -1850,7 +1790,6 @@ function importarMesclar(){
             mnN:{ ...((dados.manualsSenat && dados.manualsSenat[oc.id]) || {}) }
           };
         });
-
         // 3. Commit atômico — sem await/throw possível entre as atribuições.
         removidos.forEach(c => {
           delete fluxo[c.id]; delete drafts[c.id]; delete manuals[c.id];
@@ -1863,11 +1802,9 @@ function importarMesclar(){
           manuals[n.c.id]=n.mn; manualsSenat[n.c.id]=n.mnN;
           drafts[n.c.id]={ ...n.fx }; draftsSenat[n.c.id]={ ...n.fxN };
         });
-
         const add = novos.length;
         let comDiv = 0;
         novos.forEach(n => { if(!calcDivOk(n.c.id)) comDiv++; });
-
         if(!contratos.some(c => c.id === selId)) selId = contratos[0]?.id ?? null;
         salvarStorage();
         toast(`+${add} contrato(s) do lote "${esc(lote)}"${removidos.length?` · ${removidos.length} substituído(s)`:''}${comDiv?` · ${comDiv} com divergência`:''}`);
@@ -1878,13 +1815,11 @@ function importarMesclar(){
   };
   inp.click();
 }
-
 function limparDados(){
   if(!confirm('Apagar TODOS os dados e voltar aos dados iniciais?')) return;
   localStorage.removeItem(STORAGE_KEY);
   location.reload();
 }
-
 // Esvazia a base para usar a máquina apenas como consolidadora dos lotes.
 // Diferente de "Resetar": não volta aos contratos de demonstração.
 function novaBaseConsolidacao(){
@@ -1892,11 +1827,11 @@ function novaBaseConsolidacao(){
   contratos=[]; fluxo={}; drafts={}; manuals={};
   fluxoSenat={}; draftsSenat={}; manualsSenat={};
   selId=null;
+  filtCrCt='Todos'; filtCr='Todos';
   salvarStorage();
   toast('Base vazia — pronta para consolidar os lotes');
   showPage(paginaAtual);
 }
-
 // ── BARRA DE STATUS STORAGE ───────────────────────────────────────────────────
 function renderStorageBar(){
   let bar = document.getElementById('storage-bar');
@@ -1918,7 +1853,6 @@ function renderStorageBar(){
     <button onclick="novaBaseConsolidacao()" style="background:rgba(245,158,11,.12);color:var(--obra);border:1px solid rgba(245,158,11,.3);padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:5px">${ico('inbox',11)} Base vazia (consolidar)</button>
     <button onclick="limparDados()" style="background:transparent;color:var(--dan);border:1px solid rgba(248,113,113,.3);padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:5px">${ico('trash',11)} Resetar</button>`;
 }
-
 // ── EXCLUIR CONTRATO ──────────────────────────────────────────────────────────
 function excluirContrato(cid){
   if(!confirm('Excluir este contrato permanentemente? Esta ação não pode ser desfeita.')) return;
@@ -1931,7 +1865,6 @@ function excluirContrato(cid){
   toast('Contrato excluído.');
   renderContratos();
 }
-
 // ── EDITAR METADADOS ──────────────────────────────────────────────────────────
 function abrirEditModal(cid){
   // Só (re)inicializa editForm ao ABRIR um contrato diferente. Os onchange
@@ -1953,7 +1886,6 @@ function abrirEditModal(cid){
   renderContratos();
 }
 function fecharEditModal(){ editModalId=null; renderContratos(); }
-
 function buildEditModal(c){
   if(!c) return '';
   const eO=editForm.servico==='Obra';
@@ -1986,7 +1918,7 @@ function buildEditModal(c){
           <div class="fg"><label class="flbl">Categoria / Projeto</label><select class="fsel2" onchange="editForm.categoria=this.value">${PROJETOS.map(p=>`<option${p===editForm.categoria?' selected':''}>${esc(p)}</option>`).join('')}</select></div>
           <div class="fg"><label class="flbl">Tipo de Contratação</label><select class="fsel2 ${eA?'obra-hl':''}" onchange="onServicoChange(editForm,this.value);abrirEditModal(${c.id})">${SERVICOS.map(s=>`<option${s===editForm.servico?' selected':''}>${esc(s)}</option>`).join('')}</select></div>
           <div class="fg"><label class="flbl">Conta Contábil</label><select class="fsel2" onchange="editForm.conta_contabil=this.value">${CONTAS.map(ct=>`<option${ct===editForm.conta_contabil?' selected':''}>${esc(ct)}</option>`).join('')}</select></div>
-          <div class="fg"><label class="flbl">Localidade</label><select class="fsel2" onchange="editForm.localidade=this.value">${LOCALIDADES.map(l=>`<option${l===editForm.localidade?' selected':''}>${esc(l)}</option>`).join('')}</select></div>
+          <div class="fg"><label class="flbl">Localidade <span style="color:var(--acc2);font-size:11px">${ico('map',10)} CR: ${getConselho(editForm.localidade)}</span></label><select class="fsel2" onchange="editForm.localidade=this.value;abrirEditModal(${c.id})">${LOCALIDADES.map(l=>`<option${l===editForm.localidade?' selected':''}>${esc(l)}</option>`).join('')}</select></div>
           <div class="fg"><label class="flbl" style="color:var(--prazo)">${ico('calendar',12)} Qtd. Meses</label><input class="finp prazo-hl" type="number" min="1" value="${esc(editForm.mesesExecucao)}" oninput="editForm.mesesExecucao=this.value" placeholder="6"/></div>
           <div class="fg"><label class="flbl" style="color:var(--prazo)">${ico('calendar',12)} Mês de Início</label><div style="display:flex;gap:6px;min-width:0">
             <select class="fsel2 prazo-hl" style="flex:2;width:0;min-width:0" onchange="editForm.mesInicio=Number(this.value);editForm.mesAbsInicio=String(absIdx(editForm.anoInicio,editForm.mesInicio))">${MESES.map((m,mi)=>`<option value="${mi}"${mi===editForm.mesInicio?' selected':''}>${m}</option>`).join('')}</select>
@@ -2004,7 +1936,6 @@ function buildEditModal(c){
     </div>
   </div>`;
 }
-
 function salvarEdicao(cid){
   if(!editForm.responsavel.trim()||!editForm.projeto.trim()){toast('Preencha os campos obrigatórios');return;}
   const c=contratos.find(x=>x.id===cid);
@@ -2013,13 +1944,11 @@ function salvarEdicao(cid){
   const me=Math.min(MAX_MESES,Math.max(1,parseInt(editForm.mesesExecucao)||6));
   const _maE=parseInt(editForm.mesAbsInicio);
   const ma=Number.isFinite(_maE)?_maE:c.mesAbsInicio; // permite índices negativos (datas retroativas)
-
   const eraAuto=hasAutoPrev(c);
   const tipoMudou=editForm.servico!==c.servico;
   const novaAuto=hasAutoPrev({servico:editForm.servico});
   const startMudou=ma!==c.mesAbsInicio;
   const mudouEstrutura=novaAuto&&(vt!==c.valorTotal||me!==c.mesesExecucao||startMudou||!eraAuto||tipoMudou);
-
   c.responsavel=editForm.responsavel.trim();
   c.projeto=editForm.projeto.trim();
   c.entidade=editForm.entidade;
@@ -2030,12 +1959,10 @@ function salvarEdicao(cid){
   c.valorTotal=vt;
   c.mesesExecucao=me;
   c.mesAbsInicio=ma;
-
   // rateio: atualiza e detecta mudança de pct/ativação
   const novoRateio=editForm.rateio?{sestPct:editForm.sestPct,senatPct:100-editForm.sestPct}:null;
   const rateiMudou=JSON.stringify(novoRateio)!==JSON.stringify(c.rateio||null);
   c.rateio=novoRateio;
-
   if(mudouEstrutura||rateiMudou){
     const pT=Math.min(MAX_MESES, me);
     const vTcurva=vt;
@@ -2075,7 +2002,6 @@ function salvarEdicao(cid){
     manuals[cid]={}; manualsSenat[cid]={};
     toast('Metadados salvos! Fluxo automático removido (tipo livre).');
   } else { toast('Metadados salvos!'); }
-
   podarFluxo(cid);
   drafts[cid]={...fluxo[cid]};
   draftsSenat[cid]={...(fluxoSenat[cid]||{})};
@@ -2083,12 +2009,10 @@ function salvarEdicao(cid){
   salvarStorage();
   renderContratos();
 }
-
 // ── INIT ──────────────────────────────────────────────────────────────────────
 carregarStorage();
 renderContratos();
 renderStorageBar();
-
 // Redesenha a página atual no resize (gráficos canvas têm largura fixada no render).
 let _rzT;
 window.addEventListener('resize', ()=>{ clearTimeout(_rzT); _rzT=setTimeout(()=>showPage(paginaAtual), 180); });
