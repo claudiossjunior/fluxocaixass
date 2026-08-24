@@ -465,6 +465,7 @@ let filtLote = 'Todos';
 let filtCr = 'Todos';      // Conselho Regional — filtro da Dashboard
 let filtRespCt = 'Todos';
 let filtCrCt = 'Todos';    // Conselho Regional — filtro da lista de Contratos
+let filtCatCt = 'Todos';   // Projeto/categoria — filtro da lista de Contratos
 let drillConta = null;
 let configSection = 'contas';
 let showNovoModal = false;
@@ -750,12 +751,15 @@ function renderContratos(){
   if(filtRespCt!=='Todos'&&!respOpts.includes(filtRespCt)) filtRespCt='Todos';
   const crOpts=['Todos',...listaConselhos(contratos)];
   if(filtCrCt!=='Todos'&&!crOpts.includes(filtCrCt)) filtCrCt='Todos';
+  const catOpts=['Todos',...[...new Set([...PROJETOS,...contratos.map(c=>(c.categoria||'').trim()).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,'pt-BR'))];
+  if(filtCatCt!=='Todos'&&!catOpts.includes(filtCatCt)) filtCatCt='Todos';
   const ctFiltrados=contratos.filter(x=>
     (filtRespCt==='Todos'||(x.responsavel||'').trim()===filtRespCt)&&
-    (filtCrCt==='Todos'||getConselho(x.localidade)===filtCrCt)
+    (filtCrCt==='Todos'||getConselho(x.localidade)===filtCrCt)&&
+    (filtCatCt==='Todos'||(x.categoria||'').trim()===filtCatCt)
   );
-  const temFiltroCt=filtRespCt!=='Todos'||filtCrCt!=='Todos';
-  const filtroCtLabel=[filtRespCt!=='Todos'?filtRespCt:null,filtCrCt!=='Todos'?filtCrCt:null].filter(Boolean).join(' + ');
+  const temFiltroCt=filtRespCt!=='Todos'||filtCrCt!=='Todos'||filtCatCt!=='Todos';
+  const filtroCtLabel=[filtRespCt!=='Todos'?filtRespCt:null,filtCrCt!=='Todos'?filtCrCt:null,filtCatCt!=='Todos'?filtCatCt:null].filter(Boolean).join(' + ');
   let listaHtml=ctFiltrados.map(x=>{
     const tp=prazoTotal(x);
     const entLabel=hasRateio(x)
@@ -764,6 +768,7 @@ function renderContratos(){
     return `<div class="ci ${isO(x)?'obra':''} ${x.id===selId?'sel':''}" onclick="selContrato(${x.id})">
       <div class="ci-name">${isO(x)?ico('building',11)+' ':isFisc(x)?ico('clipboard',11)+' ':''}${esc(x.projeto)}</div>
       <div class="ci-meta">${entLabel} · ${getConselho(x.localidade)}</div>
+      <div class="ci-meta" style="opacity:.75">${esc(x.categoria||'—')}</div>
       <div class="ci-prazo">${ico('calendar',10)} ${tp}m · ${prazoLabel(x.mesAbsInicio,tp)}</div>
     </div>`;
   }).join('');
@@ -859,6 +864,7 @@ function renderContratos(){
         <div class="clist-filtros">
           <select class="fsel" onchange="setFiltRespCt(this.value)" title="Filtrar por responsável (define o lote ao exportar)">${respOpts.map(r=>`<option${r===filtRespCt?' selected':''}>${r==='Todos'?'Todos os responsáveis':esc(r)}</option>`).join('')}</select>
           <select class="fsel" onchange="setFiltCrCt(this.value)" title="Filtrar por Conselho Regional (derivado da UF da localidade). Não afeta a exportação de lote, que segue o responsável.">${crOpts.map(r=>`<option${r===filtCrCt?' selected':''}>${r==='Todos'?'Todos os conselhos':esc(r)}</option>`).join('')}</select>
+          <select class="fsel" onchange="setFiltCatCt(this.value)" title="Filtrar por projeto/categoria. Não afeta a exportação de lote, que segue o responsável.">${catOpts.map(r=>`<option${r===filtCatCt?' selected':''}>${r==='Todos'?'Todos os projetos':esc(r)}</option>`).join('')}</select>
         </div>
         <div class="clist-bd" onscroll="contratosListScrollTop=this.scrollTop">${listaHtml||`<div style="padding:18px;text-align:center;font-size:11px;color:var(--mut)">Nenhum contrato para «${esc(filtroCtLabel||'Todos')}»</div>`}</div>
       </div>
@@ -1162,6 +1168,7 @@ function setFiltLote(v){filtLote=v;drillConta=null;renderDashboard();}
 function setFiltCr(v){filtCr=v;drillConta=null;renderDashboard();}
 function setFiltRespCt(v){filtRespCt=v;renderContratos();}
 function setFiltCrCt(v){filtCrCt=v;renderContratos();}
+function setFiltCatCt(v){filtCatCt=v;renderContratos();}
 function renderDashboard(){
   refreshAgora();
   const el=document.getElementById('page-dashboard');
@@ -1656,7 +1663,7 @@ function exportarJSON(){
   a.download = `fluxocaixa_${slug(lote||'base_completa')}_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  const notaCr = filtCrCt!=='Todos' ? ' · filtro de conselho ignorado na exportação' : '';
+  const notaCr = (filtCrCt!=='Todos'||filtCatCt!=='Todos') ? ' · filtros de conselho/projeto ignorados na exportação' : '';
   toast((lote?`Lote exportado: «${esc(lote)}» (${alvo.length} contrato(s))`:`Backup completo exportado (${alvo.length} contrato(s))`)+notaCr);
 }
 function exportarCSV(){
@@ -1734,7 +1741,7 @@ function importarJSON(){
           manualsSenat[c.id]= dados.manualsSenat?.[c.id] || {};
         });
         selId = contratos[0]?.id ?? null;
-        filtCrCt='Todos'; filtCr='Todos';
+        filtCrCt='Todos'; filtCr='Todos'; filtCatCt='Todos'; filtCat='Todas';
         salvarStorage();
         toast('Dados importados com sucesso!');
         showPage(paginaAtual);
@@ -1827,7 +1834,7 @@ function novaBaseConsolidacao(){
   contratos=[]; fluxo={}; drafts={}; manuals={};
   fluxoSenat={}; draftsSenat={}; manualsSenat={};
   selId=null;
-  filtCrCt='Todos'; filtCr='Todos';
+  filtCrCt='Todos'; filtCr='Todos'; filtCatCt='Todos'; filtCat='Todas';
   salvarStorage();
   toast('Base vazia — pronta para consolidar os lotes');
   showPage(paginaAtual);
