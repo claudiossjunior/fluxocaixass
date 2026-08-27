@@ -9,6 +9,16 @@
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0a0c10;--sur:#111318;--sur2:#181c24;--bor:#22283a;--acc:#4ade80;--acc2:#22d3ee;--dan:#f87171;--txt:#e8eaf0;--mut:#6b7280;--sest:#818cf8;--senat:#fb923c;--obra:#f59e0b;--prazo:#a78bfa}
 body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex}
+/* BARRAS DE ROLAGEM - PALETA DA FERRAMENTA */
+html{scrollbar-color:var(--bor) var(--bg);scrollbar-width:thin}
+*{scrollbar-color:var(--bor) var(--sur);scrollbar-width:thin}
+*::-webkit-scrollbar{width:11px;height:11px}
+*::-webkit-scrollbar-track{background:var(--sur);border-radius:10px}
+*::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--bor),#374151);border:2px solid var(--sur);border-radius:10px}
+*::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,var(--acc),#22c55e)}
+*::-webkit-scrollbar-thumb:active{background:var(--acc)}
+*::-webkit-scrollbar-corner{background:var(--sur)}
+
 /* SIDEBAR */
 .sidebar{width:200px;min-height:100vh;background:var(--sur);border-right:1px solid var(--bor);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100}
 .logo{padding:22px 18px 16px;border-bottom:1px solid var(--bor)}
@@ -416,8 +426,8 @@ function calcSomaDraft(cid){
   const c=contratos.find(x=>x.id===cid);
   const idxs=getIdxs(c);
   // Espelha o que salvarFluxo persiste: drafts para todos os meses editáveis
-  // (passados e futuros) + fluxo apenas no mês atual (readonly, não salvo).
-  return idxs.reduce((s,a)=>s+(a===ABS_NOW?(fluxo[cid]?.[a]||0):(drafts[cid]?.[a]||0)),0);
+  // Inclui meses passados, atual e futuros; o mês atual também é editável e salvo.
+  return idxs.reduce((s,a)=>s+(drafts[cid]?.[a]??fluxo[cid]?.[a]??0),0);
 }
 function calcTotalEsperado(cid){ return contratos.find(x=>x.id===cid).valorTotal; }
 function calcDivergencia(cid){
@@ -509,7 +519,7 @@ function calcSomaDraftEnt(cid, ent){
   const c=contratos.find(x=>x.id===cid);
   const idxs=getIdxs(c);
   const fObj=getFluxoObj(cid,ent), dObj=getDraftObj(cid,ent);
-  return idxs.reduce((s,a)=>s+(a===ABS_NOW?(fObj[a]||0):(dObj[a]||0)),0);
+  return idxs.reduce((s,a)=>s+(dObj[a]??fObj[a]??0),0);
 }
 function calcDivergenciaEnt(cid, ent){
   const c=contratos.find(x=>x.id===cid);
@@ -544,7 +554,7 @@ function ajustarResiduoEnt(cid, ent){
   const div = hasRateio(c) ? calcDivergenciaEnt(cid,ent) : calcDivergencia(cid);
   if(div===null || Math.abs(div)<=DIV_TOL) return true;
   if(Math.abs(div)>AJUSTE_RESIDUAL_TOL) return false;
-  const idxs=getIdxs(c).filter(a=>a!==ABS_NOW);
+  const idxs=getIdxs(c);
   const dObj = ent==='senat' ? (draftsSenat[cid]=draftsSenat[cid]||{}) : (drafts[cid]=drafts[cid]||{});
   const candidatos = [
     ...idxs.filter(a=>a>ABS_NOW && (dObj[a]||0)>0).sort((a,b)=>b-a),
@@ -630,13 +640,13 @@ function buildMesesGrid(c, idxs, isObra, ent){
       let bdg='';
       if(st==='b'&&pastEdit) bdg=`<span class="bdg bdg-m">Editado</span>`;
       else if(st==='b') bdg=`<span class="bdg bdg-b">Realizado</span>`;
-      else if(st==='a') bdg=`<span class="bdg bdg-a">Atual</span>`;
+      else if(st==='a') bdg=`<span class="bdg bdg-a">Atual · Editável</span>`;
       else if(isObra&&!isM) bdg=`<span class="bdg bdg-c">${isFisc(c)?'Linear':'Curva S'}</span>`;
       else if(isObra&&isM) bdg=`<span class="bdg bdg-m">Manual</span>`;
       else bdg=`<span class="bdg bdg-e">Editável</span>`;
-      const ro=st==='a'?'readonly':'';
-      const cls='mi'+(st==='a'?' ro':'')+(isObra&&!isM&&st==='e'?' ca':'')+(isM?' cm':'')+(pastEdit?' pe':'');
-      const evts=!ro?`onfocus="this.value=parseInp(this.value)||''" onblur="var v=parseInp(this.value);this.value=fmtInp(v);onMesChange(${c.id},${a},v,${isObra?1:0},'${entArg}',event)"`:''
+      const ro='';
+      const cls='mi'+(isObra&&!isM&&st==='e'?' ca':'')+(isM?' cm':'')+(pastEdit?' pe':'');
+      const evts=`onfocus="this.value=parseInp(this.value)||''" onblur="var v=parseInp(this.value);this.value=fmtInp(v);onMesChange(${c.id},${a},v,${isObra?1:0},'${entArg}',event)"`
       const rateioBdg=hasRateio(c)&&st!=='b'?`<span class="bdg" style="background:rgba(129,140,248,.15);color:var(--sest);font-size:10px">∝</span>`:'';
       html+=`<div><div class="ml2">${MESES[mes]} ${bdg}${rateioBdg}</div>
         <input type="text" class="${cls}" ${ro} value="${fmtInp(val)}" placeholder="R$ 0" data-abs="${a}" ${evts}></div>`;
@@ -657,7 +667,7 @@ function recalcObraFuture(cid, ent){
     // ção se perdia nos meses livres.
     const vTtot=c.valorTotal;
     const sp=c.rateio.sestPct/100;
-    let fixo=(fluxo[cid]?.[ABS_NOW]||0)+(fluxoSenat[cid]?.[ABS_NOW]||0);
+    let fixo=(dS[ABS_NOW]??fluxo[cid]?.[ABS_NOW]??0)+(dN[ABS_NOW]??fluxoSenat[cid]?.[ABS_NOW]??0);
     const dS=drafts[cid]||{}, dN=draftsSenat[cid]||{};
     const mS=manuals[cid]||{}, mN=manualsSenat[cid]||{};
     for(let a=c.mesAbsInicio;a<ABS_NOW;a++){ if(prazoSet.has(a)) fixo+=(dS[a]||0)+(dN[a]||0); }
@@ -681,7 +691,7 @@ function recalcObraFuture(cid, ent){
   // Sem rateio: comportamento original (uma única casa).
   const vT=getValorTotalEnt(c, ent||'sest');
   const fObj=getFluxoObj(cid,ent), dObj=getDraftObj(cid,ent), mObj=getManualObj(cid,ent);
-  let fixo=fObj[ABS_NOW]||0;
+  let fixo=dObj[ABS_NOW]??fObj[ABS_NOW]??0;
   for(let a=c.mesAbsInicio;a<ABS_NOW;a++){if(prazoSet.has(a))fixo+=(dObj[a]||0);}
   Object.keys(mObj).forEach(a=>{const ai=Number(a);if(ai>ABS_NOW&&prazoSet.has(ai))fixo+=(dObj[ai]||0);});
   const saldo=Math.max(0,vT-fixo);
@@ -708,7 +718,7 @@ function onMesChange(cid, absI, val, isObra, ent, ev){
   }
   if(isObra){
     // Marca o mês editado como manual (em ambas as casas se houver rateio).
-    if(absI>ABS_NOW){
+    if(absI>=ABS_NOW){
       if(hasRateio(c)){
         manuals[cid]=manuals[cid]||{}; manuals[cid][absI]=true;
         manualsSenat[cid]=manualsSenat[cid]||{}; manualsSenat[cid][absI]=true;
@@ -742,8 +752,8 @@ function renderContratos(){
   const idxs=c?getIdxs(c):[];
   const totC=c?idxs.reduce((s,a)=>{
     const st=stAbs(a);
-    const vS=st==='e'?(drafts[c.id]?.[a]??0):(fluxo[c.id]?.[a]??0);
-    const vN=hasRateio(c)?(st==='e'?(draftsSenat[c.id]?.[a]??0):(fluxoSenat[c.id]?.[a]??0)):0;
+    const vS=drafts[c.id]?.[a]??fluxo[c.id]?.[a]??0;
+    const vN=hasRateio(c)?(draftsSenat[c.id]?.[a]??fluxoSenat[c.id]?.[a]??0):0;
     return s+vS+vN;
   },0):0;
   // lista (filtrável por responsável e por Conselho Regional)
@@ -832,8 +842,8 @@ function renderContratos(){
           const vTn=c.valorTotal;
           const fS=fluxo[c.id]||{}, dS=drafts[c.id]||{};
           const fN=fluxoSenat[c.id]||{}, dN=draftsSenat[c.id]||{};
-          const pgS=idxs.filter(a=>a<ABS_NOW).reduce((s,a)=>s+(dS[a]??fS[a]??0),0)+(fS[ABS_NOW]||0);
-          const pgN=hasRateio(c)?(idxs.filter(a=>a<ABS_NOW).reduce((s,a)=>s+(dN[a]??fN[a]??0),0)+(fN[ABS_NOW]||0)):0;
+          const pgS=idxs.filter(a=>a<ABS_NOW).reduce((s,a)=>s+(dS[a]??fS[a]??0),0)+(dS[ABS_NOW]??fS[ABS_NOW]??0);
+          const pgN=hasRateio(c)?(idxs.filter(a=>a<ABS_NOW).reduce((s,a)=>s+(dN[a]??fN[a]??0),0)+(dN[ABS_NOW]??fN[ABS_NOW]??0)):0;
           const pago=pgS+pgN;
           const sald=Math.max(0,vTn-pago);
           const prg=vTn>0?Math.min(100,Math.round(pago/vTn*100)):0;
@@ -894,8 +904,8 @@ function buildObraPanel(c){
   // Totais combinados (SEST + SENAT)
   const fS=fluxo[c.id]||{}, dS=drafts[c.id]||{};
   const fN=fluxoSenat[c.id]||{}, dN=draftsSenat[c.id]||{};
-  const pagoS=idxs.filter(a=>a<ABS_NOW).reduce((s,a)=>s+(dS[a]??fS[a]??0),0)+(fS[ABS_NOW]||0);
-  const pagoN=hasRateio(c)?(idxs.filter(a=>a<ABS_NOW).reduce((s,a)=>s+(dN[a]??fN[a]??0),0)+(fN[ABS_NOW]||0)):0;
+  const pagoS=idxs.filter(a=>a<ABS_NOW).reduce((s,a)=>s+(dS[a]??fS[a]??0),0)+(dS[ABS_NOW]??fS[ABS_NOW]??0);
+  const pagoN=hasRateio(c)?(idxs.filter(a=>a<ABS_NOW).reduce((s,a)=>s+(dN[a]??fN[a]??0),0)+(dN[ABS_NOW]??fN[ABS_NOW]??0)):0;
   const tPago=pagoS+pagoN;
   const saldo=Math.max(0,vT-tPago);
   const prog=vT>0?Math.min(100,Math.round(tPago/vT*100)):0;
@@ -984,10 +994,10 @@ function buildObraPanel(c){
 function temAlteracoesNaoSalvas(cid){
   const d=drafts[cid]||{}, f=fluxo[cid]||{};
   const keys=new Set([...Object.keys(d),...Object.keys(f)]);
-  for(const k of keys){ if(Number(k)===ABS_NOW) continue; if((d[k]||0)!==(f[k]||0)) return true; }
+  for(const k of keys){ if((d[k]||0)!==(f[k]||0)) return true; }
   const dN=draftsSenat[cid]||{}, fN=fluxoSenat[cid]||{};
   const keysN=new Set([...Object.keys(dN),...Object.keys(fN)]);
-  for(const k of keysN){ if(Number(k)===ABS_NOW) continue; if((dN[k]||0)!==(fN[k]||0)) return true; }
+  for(const k of keysN){ if((dN[k]||0)!==(fN[k]||0)) return true; }
   return false;
 }
 function selContrato(id){
@@ -1017,10 +1027,10 @@ function salvarFluxo(cid){
   if(!calcDivOk(cid)){ toast('Não é possível salvar com divergência material. Ajuste os valores.'); return; }
   const idxs=getIdxs(c);
   fluxo[cid]=fluxo[cid]||{};
-  idxs.filter(a=>a!==ABS_NOW).forEach(a=>{ fluxo[cid][a]=drafts[cid][a]||0; });
+  idxs.forEach(a=>{ fluxo[cid][a]=drafts[cid][a]||0; });
   if(hasRateio(c)){
     fluxoSenat[cid]=fluxoSenat[cid]||{};
-    idxs.filter(a=>a!==ABS_NOW).forEach(a=>{ fluxoSenat[cid][a]=draftsSenat[cid]?.[a]||0; });
+    idxs.forEach(a=>{ fluxoSenat[cid][a]=draftsSenat[cid]?.[a]||0; });
   }
   podarFluxo(cid);
   salvarStorage();
@@ -1300,13 +1310,13 @@ function drawContratoChart(canvas, c){
   // Acumulado por casa
   let cumulativeS, cumulativeN;
   if(hasRateio(c)){
-    const mS=idxs.map(a=>{const st=stAbs(a);return st==='e'?(drafts[c.id]?.[a]||0):(fluxo[c.id]?.[a]||0);});
-    const mN=idxs.map(a=>{const st=stAbs(a);return st==='e'?(draftsSenat[c.id]?.[a]||0):(fluxoSenat[c.id]?.[a]||0);});
+    const mS=idxs.map(a=>drafts[c.id]?.[a]??fluxo[c.id]?.[a]??0);
+    const mN=idxs.map(a=>draftsSenat[c.id]?.[a]??fluxoSenat[c.id]?.[a]??0);
     let cumS=0,cumN=0;
     cumulativeS=mS.map(v=>(cumS+=v));
     cumulativeN=mN.map(v=>(cumN+=v));
   } else {
-    const mS=idxs.map(a=>{const st=stAbs(a);return st==='e'?(drafts[c.id]?.[a]||0):(fluxo[c.id]?.[a]||0);});
+    const mS=idxs.map(a=>drafts[c.id]?.[a]??fluxo[c.id]?.[a]??0);
     let cum=0; cumulativeS=mS.map(v=>(cum+=v)); cumulativeN=null;
   }
   const drawFrame=p=>{
@@ -2026,3 +2036,4 @@ window.addEventListener('resize', ()=>{ clearTimeout(_rzT); _rzT=setTimeout(()=>
 </script>
 </body>
 </html>
+
