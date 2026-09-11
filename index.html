@@ -1233,7 +1233,7 @@ function renderDashboard(){
       <td><span class="chip" style="background:${corC(conta)}22;color:${corC(conta)}">${ico('dot',7)} ${esc(conta)}</span></td>
       ${cells}<td style="font-weight:600;color:${tot>0?'var(--acc)':'var(--mut)'}">${tot===0?'—':fmt(tot)}</td></tr>`;
   }).join('');
-  const totCells=tpm.map((v,i)=>{const ai=mesAno[i];const isPast=ai<ABS_NOW;return `<td class="${isPast?'cel-b':''}">${v===0?'—':fmtS(v)}</td>`;}).join('');
+  const totCells=tpm.map((v,i)=>{const ai=mesAno[i];const isPast=ai<ABS_NOW;return `<td class="${isPast?'cel-b':''}">${v===0?'—':fmt(v)}</td>`;}).join('');
   const thCells=MESES.map((m,mi)=>{const ai=mesAno[mi];const isAt=ai===absIdx(ANO,MES);const isPast=ai<ABS_NOW;return `<th class="${isAt?'th-a':isPast?'cel-b':''}">${m}</th>`;}).join('');
   el.innerHTML=`
     <div class="ph"><div><div class="ph-title">Dashboard</div><div class="ph-sub">Consolidado por ano fechado</div></div></div>
