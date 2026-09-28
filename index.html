@@ -667,8 +667,8 @@ function recalcObraFuture(cid, ent){
     // ção se perdia nos meses livres.
     const vTtot=c.valorTotal;
     const sp=c.rateio.sestPct/100;
-    let fixo=(dS[ABS_NOW]??fluxo[cid]?.[ABS_NOW]??0)+(dN[ABS_NOW]??fluxoSenat[cid]?.[ABS_NOW]??0);
     const dS=drafts[cid]||{}, dN=draftsSenat[cid]||{};
+    let fixo=(dS[ABS_NOW]??fluxo[cid]?.[ABS_NOW]??0)+(dN[ABS_NOW]??fluxoSenat[cid]?.[ABS_NOW]??0);
     const mS=manuals[cid]||{}, mN=manualsSenat[cid]||{};
     for(let a=c.mesAbsInicio;a<ABS_NOW;a++){ if(prazoSet.has(a)) fixo+=(dS[a]||0)+(dN[a]||0); }
     const manualAbs=new Set([...Object.keys(mS),...Object.keys(mN)].map(Number));
