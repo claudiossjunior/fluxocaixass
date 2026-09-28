@@ -439,6 +439,8 @@ function calcDivergencia(cid){
 let fluxoSenat = {};   // SENAT cash flows para contratos com rateio
 let draftsSenat = {};
 let manualsSenat = {};
+let savedManuals = {};      // snapshot dos manuals no último Salvar (restaurado ao descartar)
+let savedManualsSenat = {};
 let contratos = [
   {id:1,responsavel:"Rafael",entidade:"SEST",projeto:"Centro de Formação Porto Velho",categoria:"Implantação de Novas Unidades",localidade:"Porto Velho/RO (N)",servico:"Obra",conta_contabil:"Imobilizado em Andamento",valorTotal:1500000,mesAbsInicio:ABS_NOW-3,mesesExecucao:12},
   {id:2,responsavel:"Gabriela",entidade:"SENAT",projeto:"Obra Sede Aracaju",categoria:"Reforma Unidades",localidade:"Aracaju/SE (S)",servico:"Obra",conta_contabil:"Imobilizado em Andamento",valorTotal:800000,mesAbsInicio:ABS_NOW-1,mesesExecucao:8},
@@ -465,7 +467,7 @@ contratos.forEach(c=>{
 let selId = contratos[0].id;
 let drafts = {};   // draft por contrato id
 let manuals = {};  // manual edits por contrato id
-contratos.forEach(c=>{ drafts[c.id]={...fluxo[c.id]}; manuals[c.id]={}; draftsSenat[c.id]={}; manualsSenat[c.id]={}; });
+contratos.forEach(c=>{ drafts[c.id]={...fluxo[c.id]}; manuals[c.id]={}; draftsSenat[c.id]={}; manualsSenat[c.id]={}; savedManuals[c.id]={}; savedManualsSenat[c.id]={}; });
 let paginaAtual = 'contratos';
 let anoSel = ANO;
 let filtEnt = 'Todas';
@@ -702,6 +704,14 @@ function recalcObraFuture(cid, ent){
 function onMesChange(cid, absI, val, isObra, ent, ev){
   const v=Number(val)||0;
   const c=contratos.find(x=>x.id===cid);
+  // ── FIX: captura valor ANTERIOR antes de atualizar o draft ─────────────────
+  // Isso evita que um simples clique-sem-editar (focus→blur) marque o mês como
+  // MANUAL — só marca se o valor efetivamente mudou.
+  const anteriorSest = drafts[cid]?.[absI] ?? fluxo[cid]?.[absI] ?? 0;
+  const anteriorSenat = draftsSenat[cid]?.[absI] ?? fluxoSenat[cid]?.[absI] ?? 0;
+  const anterior = ent==='senat' ? anteriorSenat : anteriorSest;
+  const valorMudou = v !== anterior;
+  // ───────────────────────────────────────────────────────────────────────────
   if(ent==='senat'){ draftsSenat[cid]=draftsSenat[cid]||{}; draftsSenat[cid][absI]=v; }
   else { drafts[cid][absI]=v; }
   // Em rateio, propaga o valor editado proporcionalmente para a outra casa
@@ -717,8 +727,9 @@ function onMesChange(cid, absI, val, isObra, ent, ev){
     }
   }
   if(isObra){
-    // Marca o mês editado como manual (em ambas as casas se houver rateio).
-    if(absI>=ABS_NOW){
+    // Marca como manual APENAS se o valor realmente mudou (evita marcar por
+    // simples clique-sem-editar que dispara o onblur com mesmo valor).
+    if(absI>=ABS_NOW && valorMudou){
       if(hasRateio(c)){
         manuals[cid]=manuals[cid]||{}; manuals[cid][absI]=true;
         manualsSenat[cid]=manualsSenat[cid]||{}; manualsSenat[cid][absI]=true;
@@ -1002,13 +1013,15 @@ function temAlteracoesNaoSalvas(cid){
 }
 function selContrato(id){
   if(id!==selId && temAlteracoesNaoSalvas(selId) && !confirm('Há alterações não salvas neste contrato. Trocar mesmo assim descartará as edições.')) return;
-  // Reset apenas drafts (descartar edições não salvas). NÃO reset manuals/manualsSenat:
-  // eles são persistidos no storage e marcam quais meses futuros o usuário fixou
-  // manualmente — apagá-los faria recalcObraFuture sobrescrever edições já salvas
-  // na próxima edição de mês.
+  // Ao descartar, reverte TANTO drafts QUANTO manuals para o último estado salvo.
+  // Antes disso, manuals nunca era revertido, fazendo meses "acidentalmente" marcados
+  // como Manual persistirem mesmo após sair sem salvar. Agora usamos savedManuals
+  // (snapshot atualizado a cada Salvar) para restaurar o estado correto.
   selId=id;
   drafts[id]={...fluxo[id]};
   draftsSenat[id]={...(fluxoSenat[id]||{})};
+  manuals[id]={...(savedManuals[id]||{})};
+  manualsSenat[id]={...(savedManualsSenat[id]||{})};
   renderContratos();
 }
 // Remove de fluxo[cid] qualquer mês fora da janela atual do contrato.
@@ -1033,6 +1046,9 @@ function salvarFluxo(cid){
     idxs.forEach(a=>{ fluxoSenat[cid][a]=draftsSenat[cid]?.[a]||0; });
   }
   podarFluxo(cid);
+  // Atualiza o snapshot: savedManuals agora reflete o estado recém-salvo.
+  savedManuals[cid]={...(manuals[cid]||{})};
+  savedManualsSenat[cid]={...(manualsSenat[cid]||{})};
   salvarStorage();
   toast('Fluxo salvo!');
   renderContratos();
@@ -1626,11 +1642,15 @@ function carregarStorage(){
     // Zera estado volátil antes de repopular — evita keys órfãs dos contratos
     // de demonstração permanecerem em memória após o carregamento.
     drafts = {}; manuals = {}; draftsSenat = {}; manualsSenat = {};
+    savedManuals = {}; savedManualsSenat = {};
     contratos.forEach(c => {
-      drafts[c.id]      = { ...fluxo[c.id] };
-      manuals[c.id]     = dados.manuals?.[c.id] || {};
-      draftsSenat[c.id] = { ...(fluxoSenat[c.id]||{}) };
-      manualsSenat[c.id]= dados.manualsSenat?.[c.id] || {};
+      drafts[c.id]          = { ...fluxo[c.id] };
+      manuals[c.id]         = dados.manuals?.[c.id] || {};
+      draftsSenat[c.id]     = { ...(fluxoSenat[c.id]||{}) };
+      manualsSenat[c.id]    = dados.manualsSenat?.[c.id] || {};
+      // Snapshot inicial = o que veio do storage (estado salvo)
+      savedManuals[c.id]    = { ...(manuals[c.id]) };
+      savedManualsSenat[c.id]={ ...(manualsSenat[c.id]) };
     });
     selId = contratos[0]?.id;
     return true;
@@ -1744,11 +1764,14 @@ function importarJSON(){
         if(Array.isArray(dados.servicos) && dados.servicos.length) SERVICOS = dados.servicos;
         if(typeof dados.tecnico === 'string') tecnicoId = dados.tecnico;
         drafts = {}; manuals = {}; draftsSenat = {}; manualsSenat = {};
+        savedManuals = {}; savedManualsSenat = {};
         contratos.forEach(c => {
           drafts[c.id]      = { ...fluxo[c.id] };
           manuals[c.id]     = dados.manuals?.[c.id] || {};
           draftsSenat[c.id] = { ...(fluxoSenat[c.id]||{}) };
           manualsSenat[c.id]= dados.manualsSenat?.[c.id] || {};
+          savedManuals[c.id]    = { ...(manuals[c.id]) };
+          savedManualsSenat[c.id]={ ...(manualsSenat[c.id]) };
         });
         selId = contratos[0]?.id ?? null;
         filtCrCt='Todos'; filtCr='Todos'; filtCatCt='Todos'; filtCat='Todas';
