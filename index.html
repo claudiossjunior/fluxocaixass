@@ -1467,18 +1467,18 @@ function buildDrillModal(conta, cf, mesAno){
     pt:prazoTotal(c),
   }));
   const rows=dd.map(c=>`<tr>
-    <td><div style="font-size:12px;font-weight:500">${isO(c)?ico('building',11)+' ':isFisc(c)?ico('clipboard',11)+' ':''}${esc(c.projeto)}</div><div style="font-size:10px;color:var(--mut)">${esc(c.responsavel)}</div></td>
+    <td style="position:sticky;left:0;z-index:2;background:var(--sur);min-width:250px"><div style="font-size:12px;font-weight:500">${isO(c)?ico('building',11)+' ':isFisc(c)?ico('clipboard',11)+' ':''}${esc(c.projeto)}</div><div style="font-size:10px;color:var(--mut)">${esc(c.responsavel)}</div></td>
     <td><span class="cr">${getConselho(c.localidade)}</span></td>
     <td style="text-align:center">${hasRateio(c)?`<span class="rateio-pct sest" style="font-size:9px">${c.rateio.sestPct}%S</span> <span class="rateio-pct senat" style="font-size:9px">${c.rateio.senatPct}%N</span>`:`<span class="chip ${c.entidade==='SEST'?'sest-c':'senat-c'}">${esc(c.entidade)}</span>`}</td>
     <td style="text-align:center;color:var(--prazo);font-size:11px;font-weight:600">${c.pt}m</td>
     ${c.meses.map((v,mi)=>{const ai=mesAno[mi];const isPast=ai<ABS_NOW;return `<td class="${isPast?'cel-b':''}" style="font-size:11px">${v===0?'—':fmtS(v)}</td>`;}).join('')}
     <td style="font-weight:600;color:var(--acc)">${fmt(c.total)}</td>
   </tr>`).join('');
-  return `<div class="overlay" onclick="closeDrill()">
-    <div class="modal" style="width:min(900px,95vw)" onclick="event.stopPropagation()">
-      <div class="mhd"><div><h2><span class="chip" style="background:${corC(conta)}22;color:${corC(conta)}">${ico('dot',8)} ${esc(conta)}</span> — ${anoSel}</h2><div style="font-size:11px;color:var(--mut);margin-top:2px">${dd.length} contrato(s)${filtCr!=='Todos'?` · ${esc(filtCr)}`:''}</div></div><button class="mclose" onclick="closeDrill()">${ico('x',15)}</button></div>
-      <div class="mbody">${dd.length===0?`<div class="empty"><div class="ei">${ico('inbox',36)}</div><p>Nenhum contrato</p></div>`:`<div class="twrap"><table>
-        <thead><tr><th style="text-align:left">Contrato</th><th style="text-align:left">CR</th><th style="text-align:center">Ent.</th><th style="text-align:center">Prazo</th>${MESES.map(m=>`<th>${m}</th>`).join('')}<th>Total ${anoSel}</th></tr></thead>
+  return `<div class="overlay" onclick="closeDrill()" style="align-items:center;padding:12px">
+    <div class="modal drill-modal" style="width:min(1500px,98vw);height:min(900px,96vh);max-height:96vh;display:flex;flex-direction:column;overflow:hidden" onclick="event.stopPropagation()">
+      <div class="mhd" style="position:relative;top:auto;flex:0 0 auto"><div><h2><span class="chip" style="background:${corC(conta)}22;color:${corC(conta)}">${ico('dot',8)} ${esc(conta)}</span> — ${anoSel}</h2><div style="font-size:11px;color:var(--mut);margin-top:2px">${dd.length} contrato(s)${filtCr!=='Todos'?` · ${esc(filtCr)}`:''}</div></div><button class="mclose" onclick="closeDrill()">${ico('x',15)}</button></div>
+      <div class="mbody" style="padding:12px 14px 14px;flex:1;min-height:0;display:flex;overflow:hidden">${dd.length===0?`<div class="empty"><div class="ei">${ico('inbox',36)}</div><p>Nenhum contrato</p></div>`:`<div class="twrap drill-scroll" style="width:100%;height:100%;overflow:auto;position:relative;scrollbar-gutter:stable"><table style="min-width:1320px">
+        <thead style="position:sticky;top:0;z-index:4"><tr><th style="text-align:left;position:sticky;left:0;z-index:6;min-width:250px">Contrato</th><th style="text-align:left">CR</th><th style="text-align:center">Ent.</th><th style="text-align:center">Prazo</th>${MESES.map(m=>`<th style="min-width:82px">${m}</th>`).join('')}<th style="min-width:110px">Total ${anoSel}</th></tr></thead>
         <tbody>${rows}</tbody></table></div>`}</div>
     </div>
   </div>`;
